@@ -87,13 +87,15 @@ func addString(matches *[]MatchRule, identifier *C.char, offset C.uint64_t, data
 		})
 }
 
+// ScanFlags are used to tweak the behavior of Scan* functions.
 type ScanFlags int
 
 const (
-	// Do not output more than one match for each rule
+	// ScanFlagsFastMode avoids multiple matches of the same string when not necessary.
 	ScanFlagsFastMode = C.SCAN_FLAGS_FAST_MODE
-	// The scanned data shoud be interpreted like live, in-prcess
-	// memory rather than an on-disk file.
+	// ScanFlagsProcessMemory causes the scanned data to be
+	// interpreted like live, in-prcess memory rather than an on-disk
+	// file.
 	ScanFlagsProcessMemory = C.SCAN_FLAGS_PROCESS_MEMORY
 )
 
@@ -172,7 +174,7 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 		err = newError(C.yr_rules_define_string_variable(
 			r.r, C.CString(name), C.CString(value.(string))))
 	default:
-		err = errors.New("DefineVariable only accepts bool, int, string types")
+		err = errors.New("wrong value type passed to DefineVariable; bool, int64, string are accepted.")
 	}
 	return
 }

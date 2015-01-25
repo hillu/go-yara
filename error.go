@@ -15,14 +15,14 @@ func newError(code C.int) error {
 	if code == 0 {
 		return nil
 	}
-	if str, ok := error_strings[code]; ok {
+	if str, ok := errorStrings[code]; ok {
 		return errors.New(str)
 	}
 	return fmt.Errorf("unknown error %d", code)
 }
 
 // FIXME: This should be generated from yara/error.h
-var error_strings = map[C.int]string {
+var errorStrings = map[C.int]string {
 	C.ERROR_INSUFICIENT_MEMORY: "insuficient memory",
 	C.ERROR_COULD_NOT_ATTACH_TO_PROCESS: "could not attach to process",
 	C.ERROR_COULD_NOT_OPEN_FILE: "could not open file",
