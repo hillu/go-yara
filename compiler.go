@@ -4,7 +4,12 @@
 
 package yara
 
-// #include <yara.h>
+/*
+#cgo LDFLAGS: -lyara
+#include <yara.h>
+
+void compiler_callback(int error_leve, const char* file_name, int line_number, const char* message);
+*/
 import "C"
 import (
 	"errors"
@@ -24,6 +29,7 @@ type Compiler struct {
 func NewCompiler() (c *Compiler, err error) {
 	var compiler *C.YR_COMPILER
 	err = newError(C.yr_compiler_create(&compiler))
+	C.yr_compiler_set_callback(compiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback))
 	if err == nil {
 		c = &Compiler{c: compiler}
 		runtime.SetFinalizer(c, func(c *Compiler) {

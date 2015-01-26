@@ -6,7 +6,7 @@
 
 #include <yara.h>
 
-int callback(int message, void *message_data, void *user_data) {
+int rules_callback(int message, void *message_data, void *user_data) {
   if (message == CALLBACK_MSG_RULE_MATCHING) {
     YR_RULE* rule = (YR_RULE*) message_data;
     char* ns = rule->ns->name;

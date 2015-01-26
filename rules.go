@@ -9,7 +9,7 @@ package yara
 #cgo LDFLAGS: -lyara
 #include <yara.h>
 
-int callback(int message, void *message_data, void *user_data);
+int rules_callback(int message, void *message_data, void *user_data);
 */
 import "C"
 import (
@@ -106,7 +106,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		(*C.uint8_t)(unsafe.Pointer(&(buf[0]))),
 		C.size_t(len(buf)),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.callback),
+		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
 		C.int(timeout/time.Second)))
 	return
@@ -118,7 +118,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 		r.r,
 		C.CString(filename),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.callback),
+		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
 		C.int(timeout/time.Second)))
 	return
@@ -130,7 +130,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 		r.r,
 		C.int(pid),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.callback),
+		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
 		C.int(timeout/time.Second)))
 	return
