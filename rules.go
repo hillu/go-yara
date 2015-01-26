@@ -108,7 +108,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.callback),
 		unsafe.Pointer(&matches),
-		C.int(timeout)))
+		C.int(timeout/time.Second)))
 	return
 }
 
@@ -120,7 +120,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.callback),
 		unsafe.Pointer(&matches),
-		C.int(timeout)))
+		C.int(timeout/time.Second)))
 	return
 }
 
@@ -132,7 +132,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.callback),
 		unsafe.Pointer(&matches),
-		C.int(timeout)))
+		C.int(timeout/time.Second)))
 	return
 }
 
