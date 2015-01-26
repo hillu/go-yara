@@ -41,6 +41,7 @@ func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer C.free(unsafe.Pointer(fh))
 	var ns *C.char
 	if namespace != "" {
 		ns = C.CString(namespace)
