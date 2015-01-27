@@ -91,7 +91,8 @@ func addString(matches *[]MatchRule, identifier *C.char, offset C.uint64_t, data
 type ScanFlags int
 
 const (
-	// ScanFlagsFastMode avoids multiple matches of the same string when not necessary.
+	// ScanFlagsFastMode avoids multiple matches of the same string
+	// when not necessary.
 	ScanFlagsFastMode = C.SCAN_FLAGS_FAST_MODE
 	// ScanFlagsProcessMemory causes the scanned data to be
 	// interpreted like live, in-prcess memory rather than an on-disk

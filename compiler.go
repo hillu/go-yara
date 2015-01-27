@@ -49,8 +49,8 @@ type Compiler struct {
 	Warnings []CompilerMessage
 }
 
-// A CompilerMessage contains an error or warning message produced while
-// compiling sets of rules using AddString or AddFile.
+// A CompilerMessage contains an error or warning message produced
+// while compiling sets of rules using AddString or AddFile.
 type CompilerMessage struct {
 	Filename string
 	Line     int
