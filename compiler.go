@@ -8,7 +8,7 @@ package yara
 #cgo LDFLAGS: -lyara
 #include <yara.h>
 
-void compiler_callback(int error_leve, const char* file_name, int line_number, const char* message);
+void compiler_callback(int error_level, const char* file_name, int line_number, const char* message);
 */
 import "C"
 import (
@@ -18,11 +18,43 @@ import (
 	"unsafe"
 )
 
+//export compilerCallback
+func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char) {
+	if currentCompiler == nil {
+		return
+	}
+	msg := CompilerMessage{
+		Filename: C.GoString(filename),
+		Line:     int(linenumber),
+		Text:     C.GoString(message),
+	}
+	switch errorLevel {
+	case C.YARA_ERROR_LEVEL_ERROR:
+		currentCompiler.Errors = append(currentCompiler.Errors, msg)
+	case C.YARA_ERROR_LEVEL_WARNING:
+		currentCompiler.Warnings = append(currentCompiler.Warnings, msg)
+	}
+}
+
+// FIXME: Get rid of this variable as soon as
+// https://github.com/plusvic/yara/issues/220 is fixed.
+var currentCompiler *Compiler
+
 // A Compiler encapsulates the YARA compiler that transforms rules
 // into YARA's internal, binary form which in turn is used for
 // scanning files or memory blocks.
 type Compiler struct {
-	c *C.YR_COMPILER
+	c        *C.YR_COMPILER
+	Errors   []CompilerMessage
+	Warnings []CompilerMessage
+}
+
+// A CompilerMessage contains an error or warning message produced while
+// compiling sets of rules using AddString or AddFile.
+type CompilerMessage struct {
+	Filename string
+	Line     int
+	Text     string
 }
 
 // NewCompiler creates a YARA compiler.
@@ -53,6 +85,8 @@ func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
 		ns = C.CString(namespace)
 	}
 	filename := C.CString(file.Name())
+	currentCompiler = c
+	defer func() { currentCompiler = nil }()
 	numErrors := int(C.yr_compiler_add_file(c.c, fh, ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -70,6 +104,8 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	if namespace != "" {
 		ns = C.CString(namespace)
 	}
+	currentCompiler = c
+	defer func() { currentCompiler = nil }()
 	numErrors := int(C.yr_compiler_add_string(c.c, C.CString(rules), ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
