@@ -152,3 +152,22 @@ func (c *Compiler) GetRules() (rules *Rules, err error) {
 	}
 	return
 }
+
+// Compile compiles rules and an (optional) set of variables into a
+// Rules object in a single step.
+func Compile(rules string, variables map[string]interface{}) (r *Rules, err error) {
+	var c *Compiler
+	if c, err = NewCompiler(); err != nil {
+		return
+	}
+	for k, v := range(variables) {
+		if err = c.DefineVariable(k, v); err != nil {
+			return
+		}
+	}
+	if err = c.AddString(rules, ""); err != nil {
+		return
+	}
+	r, err = c.GetRules()
+	return
+}
