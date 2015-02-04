@@ -83,8 +83,10 @@ func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
 	var ns *C.char
 	if namespace != "" {
 		ns = C.CString(namespace)
+		defer C.free(unsafe.Pointer(ns))
 	}
 	filename := C.CString(file.Name())
+	defer C.free(unsafe.Pointer(filename))
 	currentCompiler = c
 	defer func() { currentCompiler = nil }()
 	numErrors := int(C.yr_compiler_add_file(c.c, fh, ns, filename))
@@ -103,10 +105,13 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	var ns *C.char
 	if namespace != "" {
 		ns = C.CString(namespace)
+		defer C.free(unsafe.Pointer(ns))
 	}
 	currentCompiler = c
 	defer func() { currentCompiler = nil }()
-	numErrors := int(C.yr_compiler_add_string(c.c, C.CString(rules), ns))
+	crules := C.CString(rules)
+	defer C.free(unsafe.Pointer(crules))
+	numErrors := int(C.yr_compiler_add_string(c.c, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
 		msg := C.GoString(C.yr_compiler_get_error_message(
@@ -119,6 +124,8 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 // DefineVariable defines a named variable for use by the compiler.
 // Boolean, int64, and string types are supported.
 func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
 	switch value.(type) {
 	case bool:
 		var v int
@@ -126,13 +133,15 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 			v = 1
 		}
 		err = newError(C.yr_compiler_define_boolean_variable(
-			c.c, C.CString(name), C.int(v)))
+			c.c, cname, C.int(v)))
 	case int64:
 		err = newError(C.yr_compiler_define_integer_variable(
-			c.c, C.CString(name), C.int64_t(value.(int64))))
+			c.c, cname, C.int64_t(value.(int64))))
 	case string:
+		cvalue := C.CString(value.(string))
+		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_compiler_define_string_variable(
-			c.c, C.CString(name), C.CString(value.(string))))
+			c.c, cname, cvalue))
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, string are accepted.")
 	}

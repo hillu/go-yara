@@ -115,9 +115,11 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 
 // ScanFile scans a file using the ruleset.
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cfilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cfilename))
 	err = newError(C.yr_rules_scan_file(
 		r.r,
-		C.CString(filename),
+		cfilename,
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
@@ -139,14 +141,18 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 
 // Save writes a compiled ruleset to filename.
 func (r *Rules) Save(filename string) (err error) {
-	err = newError(C.yr_rules_save(r.r, C.CString(filename)))
+	cfilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cfilename))
+	err = newError(C.yr_rules_save(r.r, cfilename))
 	return
 }
 
 // LoadRules retrieves compiled ruleset from filename.
 func LoadRules(filename string) (rules *Rules, err error) {
 	var r *C.YR_RULES
-	err = newError(C.yr_rules_load(C.CString(filename), &r))
+	cfilename := C.CString(filename)
+	defer C.free(unsafe.Pointer(cfilename))
+	err = newError(C.yr_rules_load(cfilename, &r))
 	if err == nil {
 		rules = &Rules{r: r}
 		runtime.SetFinalizer(rules, func(r *Rules) {
@@ -160,6 +166,8 @@ func LoadRules(filename string) (rules *Rules, err error) {
 // DefineVariable defines a named variable for use by the compiler.
 // Boolean, int64, and string types are supported.
 func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
 	switch value.(type) {
 	case bool:
 		var v int
@@ -167,13 +175,15 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 			v = 1
 		}
 		err = newError(C.yr_rules_define_boolean_variable(
-			r.r, C.CString(name), C.int(v)))
+			r.r, cname, C.int(v)))
 	case int64:
 		err = newError(C.yr_rules_define_integer_variable(
-			r.r, C.CString(name), C.int64_t(value.(int64))))
+			r.r, cname, C.int64_t(value.(int64))))
 	case string:
+		cvalue := C.CString(value.(string))
+		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_rules_define_string_variable(
-			r.r, C.CString(name), C.CString(value.(string))))
+			r.r, cname, cvalue))
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, string are accepted.")
 	}
