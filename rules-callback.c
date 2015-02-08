@@ -28,7 +28,7 @@ int rules_callback(int message, void *message_data, void *user_data) {
         break;
       }
     }
-    char* tag_name;
+    const char* tag_name;
     yr_rule_tags_foreach(rule, tag_name) {
       addTag(user_data, tag_name);
     }
