@@ -147,7 +147,7 @@ func (r *Rules) Save(filename string) (err error) {
 	return
 }
 
-// LoadRules retrieves compiled ruleset from filename.
+// LoadRules retrieves a compiled ruleset from filename.
 func LoadRules(filename string) (rules *Rules, err error) {
 	var r *C.YR_RULES
 	cfilename := C.CString(filename)
