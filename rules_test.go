@@ -2,6 +2,8 @@ package yara
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -26,6 +28,21 @@ func TestSimpleMatch(t *testing.T) {
 	m, err := r.ScanMem([]byte(" abc "), 0, 0)
 	if err != nil {
 		t.Errorf("ScanMem: %s", err)
+	}
+	t.Logf("Matches: %+v", m)
+}
+
+func TestSimpleFileMatch(t *testing.T) {
+	r, _ := Compile(
+		"rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }",
+		nil)
+	tf, _ := ioutil.TempFile("", "TestSimpleFileMatch")
+	defer os.Remove(tf.Name())
+	tf.Write([]byte(" abc "))
+	tf.Close()
+	m, err := r.ScanFile(tf.Name(), 0, 0)
+	if err != nil {
+		t.Errorf("ScanFile(%s): %s", tf.Name(), err)
 	}
 	t.Logf("Matches: %+v", m)
 }
