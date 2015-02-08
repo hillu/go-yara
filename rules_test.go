@@ -343,3 +343,10 @@ func TestSomething(t *testing.T) {
 		"rule test { condition: 1 << 3 == 8 }",
 	}, []byte("dummy"))
 }
+
+func TestLoad(t *testing.T) {
+	r, err := LoadRules("testdata/rules.yac")
+	if r == nil || err != nil {
+		t.Fatalf("LoadRules: %e", err)
+	}
+}
