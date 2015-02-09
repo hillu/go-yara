@@ -111,10 +111,16 @@ func TestArithmeticOperators(t *testing.T) {
 func TestBitwiseOperators(t *testing.T) {
 	assertTrueRules(t, []string{
 		"rule test { condition: 0x55 | 0xAA == 0xFF }",
-		"rule test { condition: ~0xAA ^ 0x5A & 0xFF == 0x0F }",
+		"rule test { condition: ~0xAA ^ 0x5A & 0xFF == (~0xAA) ^ (0x5A & 0xFF) }",
 		"rule test { condition: ~0x55 & 0xFF == 0xAA }",
 		"rule test { condition: 8 >> 2 == 2 }",
 		"rule test { condition: 1 << 3 == 8 }",
+		"rule test { condition: 1 | 3 ^ 3 == 1 | (3 ^ 3) }",
+	}, []byte("dummy"))
+
+	assertFalseRules(t, []string{
+		"rule test { condition: ~0xAA ^ 0x5A & 0xFF == 0x0F }",
+		"rule test { condition: 1 | 3 ^ 3 == (1 | 3) ^ 3}",
 	}, []byte("dummy"))
 }
 
@@ -332,16 +338,6 @@ func TestFilesize(t *testing.T) {
 	assertTrueRules(t, []string{
 		fmt.Sprintf("rule test { condition: filesize == %d }", len(pe32file)),
 	}, pe32file)
-}
-
-func TestSomething(t *testing.T) {
-	assertTrueRules(t, []string{
-		"rule test { condition: 0x55 | 0xAA == 0xFF }",
-		"rule test { condition: ~0xAA ^ 0x5A & 0xFF == 0x0F }",
-		"rule test { condition: ~0x55 & 0xFF == 0xAA }",
-		"rule test { condition: 8 >> 2 == 2 }",
-		"rule test { condition: 1 << 3 == 8 }",
-	}, []byte("dummy"))
 }
 
 func TestLoad(t *testing.T) {
