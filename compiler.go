@@ -58,18 +58,25 @@ type CompilerMessage struct {
 }
 
 // NewCompiler creates a YARA compiler.
-func NewCompiler() (c *Compiler, err error) {
+func NewCompiler() (*Compiler, error) {
 	var compiler *C.YR_COMPILER
-	err = newError(C.yr_compiler_create(&compiler))
-	C.yr_compiler_set_callback(compiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback))
-	if err == nil {
-		c = &Compiler{c: compiler}
-		runtime.SetFinalizer(c, func(c *Compiler) {
-			C.yr_compiler_destroy(c.c)
-			c.c = nil
-		})
+	if err := newError(C.yr_compiler_create(&compiler)); err != nil {
+		return nil, err
 	}
-	return
+	c := &Compiler{c: compiler}
+	C.yr_compiler_set_callback(compiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback), unsafe.Pointer(c))
+	runtime.SetFinalizer(c, (*Compiler).Destroy)
+	return c, nil
+}
+
+// Destroy destroys the YARA data structure representing a compiler.
+// On creation, a Finalizer is automatically set up to do this.
+func (c *Compiler) Destroy() {
+	if c.c != nil {
+		C.yr_compiler_destroy(c.c)
+		c.c = nil
+	}
+	runtime.SetFinalizer(c, nil)
 }
 
 // AddFile compiles rules from an os.File. Rules are added to the
@@ -154,10 +161,7 @@ func (c *Compiler) GetRules() (rules *Rules, err error) {
 	err = newError(C.yr_compiler_get_rules(c.c, &r))
 	if err == nil {
 		rules = &Rules{r: r}
-		runtime.SetFinalizer(rules, func(r *Rules) {
-			C.yr_rules_destroy(r.r)
-			r.r = nil
-		})
+		runtime.SetFinalizer(rules, (*Rules).Destroy)
 	}
 	return
 }

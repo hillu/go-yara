@@ -148,19 +148,26 @@ func (r *Rules) Save(filename string) (err error) {
 }
 
 // LoadRules retrieves a compiled ruleset from filename.
-func LoadRules(filename string) (rules *Rules, err error) {
+func LoadRules(filename string) (*Rules, error) {
 	var r *C.YR_RULES
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	err = newError(C.yr_rules_load(cfilename, &r))
-	if err == nil {
-		rules = &Rules{r: r}
-		runtime.SetFinalizer(rules, func(r *Rules) {
-			C.yr_rules_destroy(r.r)
-			r.r = nil
-		})
+	if err := newError(C.yr_rules_load(cfilename, &r)); err != nil {
+		return nil, err
 	}
-	return
+	rules := &Rules{r: r}
+	runtime.SetFinalizer(rules, (*Rules).Destroy)
+	return rules, nil
+}
+
+// Destroy destroys the YARA data structure representing a ruleset.
+// On creation, a Finalizer is automatically set up to do this.
+func (r *Rules) Destroy() {
+	if r.r != nil {
+		C.yr_rules_destroy(r.r)
+		r.r = nil
+	}
+	runtime.SetFinalizer(r, nil)
 }
 
 // DefineVariable defines a named variable for use by the compiler.
