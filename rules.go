@@ -171,7 +171,7 @@ func (r *Rules) Destroy() {
 }
 
 // DefineVariable defines a named variable for use by the compiler.
-// Boolean, int64, and string types are supported.
+// Boolean, int64, float64, and string types are supported.
 func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -186,13 +186,16 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 	case int64:
 		err = newError(C.yr_rules_define_integer_variable(
 			r.r, cname, C.int64_t(value.(int64))))
+	case float64:
+		err = newError(C.yr_rules_define_float_variable(
+			r.r, cname, C.double(value.(float64))))
 	case string:
 		cvalue := C.CString(value.(string))
 		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_rules_define_string_variable(
 			r.r, cname, cvalue))
 	default:
-		err = errors.New("wrong value type passed to DefineVariable; bool, int64, string are accepted.")
+		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted.")
 	}
 	return
 }

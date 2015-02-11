@@ -122,7 +122,7 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 }
 
 // DefineVariable defines a named variable for use by the compiler.
-// Boolean, int64, and string types are supported.
+// Boolean, int64, float64, and string types are supported.
 func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -137,13 +137,16 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 	case int64:
 		err = newError(C.yr_compiler_define_integer_variable(
 			c.c, cname, C.int64_t(value.(int64))))
+	case float64:
+		err = newError(C.yr_compiler_define_float_variable(
+			c.c, cname, C.double(value.(float64))))
 	case string:
 		cvalue := C.CString(value.(string))
 		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_compiler_define_string_variable(
 			c.c, cname, cvalue))
 	default:
-		err = errors.New("wrong value type passed to DefineVariable; bool, int64, string are accepted.")
+		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted.")
 	}
 	return
 }
