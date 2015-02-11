@@ -6,6 +6,6 @@
 
 #include <yara.h>
 
-void compiler_callback(int error_level, const char* file_name, int line_number, const char* message) {
-  compilerCallback(error_level, file_name, line_number, message);
+void compiler_callback(int error_level, const char* file_name, int line_number, const char* message, void* user_data) {
+  compilerCallback(error_level, file_name, line_number, message, user_data);
 }

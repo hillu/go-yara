@@ -8,7 +8,7 @@ package yara
 #cgo LDFLAGS: -lyara
 #include <yara.h>
 
-void compiler_callback(int error_level, const char* file_name, int line_number, const char* message);
+void compiler_callback(int error_level, const char* file_name, int line_number, const char* message, void* user_data);
 */
 import "C"
 import (
@@ -19,10 +19,11 @@ import (
 )
 
 //export compilerCallback
-func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char) {
-	if currentCompiler == nil {
+func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char, ptr unsafe.Pointer) {
+	if ptr == nil {
 		return
 	}
+	compiler := (*Compiler)(ptr)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
@@ -30,15 +31,11 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 	}
 	switch errorLevel {
 	case C.YARA_ERROR_LEVEL_ERROR:
-		currentCompiler.Errors = append(currentCompiler.Errors, msg)
+		compiler.Errors = append(compiler.Errors, msg)
 	case C.YARA_ERROR_LEVEL_WARNING:
-		currentCompiler.Warnings = append(currentCompiler.Warnings, msg)
+		compiler.Warnings = append(compiler.Warnings, msg)
 	}
 }
-
-// FIXME: Get rid of this variable as soon as
-// https://github.com/plusvic/yara/issues/220 is fixed.
-var currentCompiler *Compiler
 
 // A Compiler encapsulates the YARA compiler that transforms rules
 // into YARA's internal, binary form which in turn is used for
@@ -94,8 +91,6 @@ func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
 	}
 	filename := C.CString(file.Name())
 	defer C.free(unsafe.Pointer(filename))
-	currentCompiler = c
-	defer func() { currentCompiler = nil }()
 	numErrors := int(C.yr_compiler_add_file(c.c, fh, ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -114,8 +109,6 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 		ns = C.CString(namespace)
 		defer C.free(unsafe.Pointer(ns))
 	}
-	currentCompiler = c
-	defer func() { currentCompiler = nil }()
 	crules := C.CString(rules)
 	defer C.free(unsafe.Pointer(crules))
 	numErrors := int(C.yr_compiler_add_string(c.c, crules, ns))
