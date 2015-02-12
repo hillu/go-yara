@@ -134,9 +134,10 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 		}
 		err = newError(C.yr_compiler_define_boolean_variable(
 			c.c, cname, C.int(v)))
-	case int64:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		value := toint64(value)
 		err = newError(C.yr_compiler_define_integer_variable(
-			c.c, cname, C.int64_t(value.(int64))))
+			c.c, cname, C.int64_t(value)))
 	case float64:
 		err = newError(C.yr_compiler_define_float_variable(
 			c.c, cname, C.double(value.(float64))))
@@ -169,7 +170,7 @@ func Compile(rules string, variables map[string]interface{}) (r *Rules, err erro
 	if c, err = NewCompiler(); err != nil {
 		return
 	}
-	for k, v := range(variables) {
+	for k, v := range variables {
 		if err = c.DefineVariable(k, v); err != nil {
 			return
 		}

@@ -183,9 +183,10 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 		}
 		err = newError(C.yr_rules_define_boolean_variable(
 			r.r, cname, C.int(v)))
-	case int64:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		value := toint64(value)
 		err = newError(C.yr_rules_define_integer_variable(
-			r.r, cname, C.int64_t(value.(int64))))
+			r.r, cname, C.int64_t(value)))
 	case float64:
 		err = newError(C.yr_rules_define_float_variable(
 			r.r, cname, C.double(value.(float64))))
