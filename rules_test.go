@@ -340,6 +340,77 @@ func TestFilesize(t *testing.T) {
 	}, pe32file)
 }
 
+type params map[string]interface{}
+
+func TestExternals(t *testing.T) {
+	for _, sample := range []struct {
+		rule      string
+		params
+		predicate bool
+	}{
+		{"rule test { condition: ext_int == 15 }", params{"ext_int": 15}, true},
+		{"rule test { condition: ext_int == -15}", params{"ext_int": -15}, true},
+		{"rule test { condition: ext_float == 3.14 }", params{"ext_float": 3.14}, true},
+		{"rule test { condition: ext_float == -0.5 }", params{"ext_float": -0.5}, true},
+		{"rule test { condition: ext_bool }", params{"ext_bool": true}, true},
+		{"rule test { condition: ext_str }", params{"ext_str": ""}, false},
+		{"rule test { condition: ext_str }", params{"ext_str": "foo"}, true},
+		{"rule test { condition: ext_bool }", params{"ext_bool": false}, false},
+		{"rule test { condition: ext_str contains \"ssi\" }", params{"ext_str": "mississippi"}, true},
+		{"rule test { condition: ext_str matches /foo/ }", params{"ext_str": ""}, false},
+		{"rule test { condition: ext_str matches /foo/ }", params{"ext_str": "FOO"}, false},
+		{"rule test { condition: ext_str matches /foo/i }", params{"ext_str": "FOO"}, true},
+		{"rule test { condition: ext_str matches /ssi(s|p)/ }", params{"ext_str": "mississippi"}, true},
+		{"rule test { condition: ext_str matches /ppi$/ }", params{"ext_str": "mississippi"}, true},
+		{"rule test { condition: ext_str matches /ssi$/ }", params{"ext_str": "mississippi"}, false},
+		{"rule test { condition: ext_str matches /^miss/ }", params{"ext_str": "mississippi"}, true},
+		{"rule test { condition: ext_str matches /^iss/ }", params{"ext_str": "mississippi"}, false},
+		{"rule test { condition: ext_str matches /ssi$/ }", params{"ext_str": "mississippi"}, false},
+	} {
+		r, err := Compile(sample.rule, sample.params)
+		if err != nil {
+			t.Errorf("rule=%s params=%+v: Compile error: %s", sample.rule, sample.params, err)
+			continue
+		}
+		m, _ := r.ScanMem([]byte("dummy"), 0, 0)
+		if sample.predicate != (len(m) > 0) {
+			t.Errorf("rule=%s params=%+v: expected %s, got %s",
+				sample.rule, sample.params, sample.predicate, (len(m) > 0))
+		}
+	}
+}
+
+func TestModules(t *testing.T) {
+	assertTrueRules(t, []string{
+		"import \"tests\" rule test { condition: tests.constants.one + 1 == tests.constants.two }",
+		"import \"tests\" rule test { condition: tests.constants.foo == \"foo\" }",
+		"import \"tests\" rule test { condition: tests.struct_array[1].i == 1 }",
+		"import \"tests\" rule test { condition: tests.struct_array[0].i == 1 or true}",
+		"import \"tests\" rule test { condition: tests.integer_array[0] == 0}",
+		"import \"tests\" rule test { condition: tests.integer_array[1] == 1}",
+		"import \"tests\" rule test { condition: tests.string_array[0] == \"foo\"}",
+		"import \"tests\" rule test { condition: tests.string_array[2] == \"baz\"}",
+		"import \"tests\" rule test { condition: tests.string_dict[\"foo\"] == \"foo\"}",
+		"import \"tests\" rule test { condition: tests.string_dict[\"bar\"] == \"bar\"}",
+		"import \"tests\" rule test { condition: tests.isum(1,2) == 3}",
+		"import \"tests\" rule test { condition: tests.isum(1,2,3) == 6}",
+		"import \"tests\" rule test { condition: tests.fsum(1.0,2.0) == 3.0}",
+		"import \"tests\" rule test { condition: tests.fsum(1.0,2.0,3.0) == 6.0}",
+		"import \"tests\" rule test { condition: tests.length(\"dummy\") == 5}",
+	}, []byte("dummy"))
+}
+
+func TestIntegerFunctions(t *testing.T) {
+	assertTrueRules(t, []string{
+		"rule test { condition: uint8(0) == 0xAA}",
+		"rule test { condition: uint16(0) == 0xBBAA}",
+		"rule test { condition: uint32(0) == 0xDDCCBBAA}",
+		"rule test { condition: uint8be(0) == 0xAA}",
+		"rule test { condition: uint16be(0) == 0xAABB}",
+		"rule test { condition: uint32be(0) == 0xAABBCCDD}",
+	}, []byte("\xAA\xBB\xCC\xDD"))
+}
+
 func TestLoad(t *testing.T) {
 	r, err := LoadRules("testdata/rules.yac")
 	if r == nil || err != nil {
