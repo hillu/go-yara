@@ -10,10 +10,12 @@ package yara
 #include <yara.h>
 
 int rules_callback(int message, void *message_data, void *user_data);
+size_t stream_read(void* ptr, size_t size, size_t nmemb, void* user_data);
 */
 import "C"
 import (
 	"errors"
+	"io"
 	"runtime"
 	"time"
 	"unsafe"
@@ -157,6 +159,20 @@ func LoadRules(filename string) (*Rules, error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	if err := newError(C.yr_rules_load(cfilename, &r)); err != nil {
+		return nil, err
+	}
+	rules := &Rules{r: r}
+	runtime.SetFinalizer(rules, (*Rules).Destroy)
+	return rules, nil
+}
+
+// ReadRules retrieves a compiled ruleset from an io.Reader
+func ReadRules(rd io.Reader) (*Rules, error) {
+	var r *C.YR_RULES
+	var stream C.YR_STREAM
+	stream.user_data = unsafe.Pointer(&rd)
+	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
+	if err := newError(C.yr_rules_load_stream(&stream, &r)); err != nil {
 		return nil, err
 	}
 	rules := &Rules{r: r}
