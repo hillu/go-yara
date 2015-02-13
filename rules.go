@@ -102,9 +102,13 @@ const (
 
 // ScanMem scans an in-memory buffer using the ruleset.
 func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	var ptr *C.uint8_t
+	if len(buf) > 0 {
+		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
+	}
 	err = newError(C.yr_rules_scan_mem(
 		r.r,
-		(*C.uint8_t)(unsafe.Pointer(&(buf[0]))),
+		ptr,
 		C.size_t(len(buf)),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
