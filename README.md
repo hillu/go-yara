@@ -6,7 +6,7 @@ Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
-YARA 3.3.0 is required.
+The current master of YARA after 3.3.0, with read stream support (merged on 2015-02-12) is required.
 
 ## Installation
 
