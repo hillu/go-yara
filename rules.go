@@ -11,6 +11,7 @@ package yara
 
 int rules_callback(int message, void *message_data, void *user_data);
 size_t stream_read(void* ptr, size_t size, size_t nmemb, void* user_data);
+size_t stream_write(void* ptr, size_t size, size_t nmemb, void* user_data);
 */
 import "C"
 import (
@@ -150,6 +151,15 @@ func (r *Rules) Save(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	err = newError(C.yr_rules_save(r.r, cfilename))
+	return
+}
+
+// Write writes a compiled ruleset to an io.Writer.
+func (r *Rules) Write(wr io.Writer) (err error) {
+	var stream C.YR_STREAM
+	stream.user_data = unsafe.Pointer(&wr)
+	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
+	err = newError(C.yr_rules_save_stream(r.r, &stream))
 	return
 }
 

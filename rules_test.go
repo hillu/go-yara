@@ -1,6 +1,7 @@
 package yara
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -438,4 +439,25 @@ func TestReader(t *testing.T) {
 		t.Errorf("ScanMem: %s", err)
 	}
 	t.Logf("Matches: %+v", m)
+}
+
+func TestWriter(t *testing.T) {
+	rd, err := os.Open("testdata/rules.yac")
+	if err != nil {
+		t.Fatalf("os.Open: %e", err)
+	}
+	compareBuf, _ := ioutil.ReadAll(rd)
+	r, _ := Compile("rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }",
+		nil)
+	wr := bytes.Buffer{}
+	if err := r.Write(&wr); err != nil {
+		t.Fatal(err)
+	}
+	newBuf := wr.Bytes()
+	if len(compareBuf) != len(newBuf) {
+		t.Errorf("len(compareBuf) = %d, len(newBuf) = %d", len(compareBuf), len(newBuf))
+	}
+	if bytes.Compare(compareBuf, newBuf) != 0 {
+		t.Error("buffers are not equal")
+	}
 }
