@@ -41,7 +41,7 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 // into YARA's internal, binary form which in turn is used for
 // scanning files or memory blocks.
 type Compiler struct {
-	c        *C.YR_COMPILER
+	cptr     *C.YR_COMPILER
 	Errors   []CompilerMessage
 	Warnings []CompilerMessage
 }
@@ -60,7 +60,7 @@ func NewCompiler() (*Compiler, error) {
 	if err := newError(C.yr_compiler_create(&compiler)); err != nil {
 		return nil, err
 	}
-	c := &Compiler{c: compiler}
+	c := &Compiler{cptr: compiler}
 	C.yr_compiler_set_callback(compiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback), unsafe.Pointer(c))
 	runtime.SetFinalizer(c, (*Compiler).Destroy)
 	return c, nil
@@ -69,9 +69,9 @@ func NewCompiler() (*Compiler, error) {
 // Destroy destroys the YARA data structure representing a compiler.
 // On creation, a Finalizer is automatically set up to do this.
 func (c *Compiler) Destroy() {
-	if c.c != nil {
-		C.yr_compiler_destroy(c.c)
-		c.c = nil
+	if c.cptr != nil {
+		C.yr_compiler_destroy(c.cptr)
+		c.cptr = nil
 	}
 	runtime.SetFinalizer(c, nil)
 }
@@ -91,11 +91,11 @@ func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
 	}
 	filename := C.CString(file.Name())
 	defer C.free(unsafe.Pointer(filename))
-	numErrors := int(C.yr_compiler_add_file(c.c, fh, ns, filename))
+	numErrors := int(C.yr_compiler_add_file(c.cptr, fh, ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
 		msg := C.GoString(C.yr_compiler_get_error_message(
-			c.c, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
+			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
 	return
@@ -111,11 +111,11 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	}
 	crules := C.CString(rules)
 	defer C.free(unsafe.Pointer(crules))
-	numErrors := int(C.yr_compiler_add_string(c.c, crules, ns))
+	numErrors := int(C.yr_compiler_add_string(c.cptr, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
 		msg := C.GoString(C.yr_compiler_get_error_message(
-			c.c, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
+			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
 	return
@@ -133,19 +133,19 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 			v = 1
 		}
 		err = newError(C.yr_compiler_define_boolean_variable(
-			c.c, cname, C.int(v)))
+			c.cptr, cname, C.int(v)))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		value := toint64(value)
 		err = newError(C.yr_compiler_define_integer_variable(
-			c.c, cname, C.int64_t(value)))
+			c.cptr, cname, C.int64_t(value)))
 	case float64:
 		err = newError(C.yr_compiler_define_float_variable(
-			c.c, cname, C.double(value.(float64))))
+			c.cptr, cname, C.double(value.(float64))))
 	case string:
 		cvalue := C.CString(value.(string))
 		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_compiler_define_string_variable(
-			c.c, cname, cvalue))
+			c.cptr, cname, cvalue))
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted.")
 	}
@@ -155,9 +155,9 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 // GetRules returns the compiled ruleset.
 func (c *Compiler) GetRules() (rules *Rules, err error) {
 	var r *C.YR_RULES
-	err = newError(C.yr_compiler_get_rules(c.c, &r))
+	err = newError(C.yr_compiler_get_rules(c.cptr, &r))
 	if err == nil {
-		rules = &Rules{r: r}
+		rules = &Rules{cptr: r}
 		runtime.SetFinalizer(rules, (*Rules).Destroy)
 	}
 	return

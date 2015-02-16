@@ -24,7 +24,7 @@ import (
 
 // Rules contains a compiled YARA ruleset.
 type Rules struct {
-	r *C.YR_RULES
+	cptr *C.YR_RULES
 }
 
 // A MatchRule represents a rule successfully matched against a block
@@ -110,7 +110,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
 	err = newError(C.yr_rules_scan_mem(
-		r.r,
+		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
 		C.int(flags),
@@ -125,7 +125,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	err = newError(C.yr_rules_scan_file(
-		r.r,
+		r.cptr,
 		cfilename,
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
@@ -137,7 +137,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 // ScanProc scans a live process using the ruleset.
 func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []MatchRule, err error) {
 	err = newError(C.yr_rules_scan_proc(
-		r.r,
+		r.cptr,
 		C.int(pid),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
@@ -150,7 +150,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 func (r *Rules) Save(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	err = newError(C.yr_rules_save(r.r, cfilename))
+	err = newError(C.yr_rules_save(r.cptr, cfilename))
 	return
 }
 
@@ -159,7 +159,7 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 	var stream C.YR_STREAM
 	stream.user_data = unsafe.Pointer(&wr)
 	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
-	err = newError(C.yr_rules_save_stream(r.r, &stream))
+	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
 	return
 }
 
@@ -171,7 +171,7 @@ func LoadRules(filename string) (*Rules, error) {
 	if err := newError(C.yr_rules_load(cfilename, &r)); err != nil {
 		return nil, err
 	}
-	rules := &Rules{r: r}
+	rules := &Rules{cptr: r}
 	runtime.SetFinalizer(rules, (*Rules).Destroy)
 	return rules, nil
 }
@@ -185,7 +185,7 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 	if err := newError(C.yr_rules_load_stream(&stream, &r)); err != nil {
 		return nil, err
 	}
-	rules := &Rules{r: r}
+	rules := &Rules{cptr: r}
 	runtime.SetFinalizer(rules, (*Rules).Destroy)
 	return rules, nil
 }
@@ -193,9 +193,9 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 // Destroy destroys the YARA data structure representing a ruleset.
 // On creation, a Finalizer is automatically set up to do this.
 func (r *Rules) Destroy() {
-	if r.r != nil {
-		C.yr_rules_destroy(r.r)
-		r.r = nil
+	if r.cptr != nil {
+		C.yr_rules_destroy(r.cptr)
+		r.cptr = nil
 	}
 	runtime.SetFinalizer(r, nil)
 }
@@ -212,19 +212,19 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 			v = 1
 		}
 		err = newError(C.yr_rules_define_boolean_variable(
-			r.r, cname, C.int(v)))
+			r.cptr, cname, C.int(v)))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		value := toint64(value)
 		err = newError(C.yr_rules_define_integer_variable(
-			r.r, cname, C.int64_t(value)))
+			r.cptr, cname, C.int64_t(value)))
 	case float64:
 		err = newError(C.yr_rules_define_float_variable(
-			r.r, cname, C.double(value.(float64))))
+			r.cptr, cname, C.double(value.(float64))))
 	case string:
 		cvalue := C.CString(value.(string))
 		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_rules_define_string_variable(
-			r.r, cname, cvalue))
+			r.cptr, cname, cvalue))
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted.")
 	}
