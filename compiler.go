@@ -163,14 +163,14 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 }
 
 // GetRules returns the compiled ruleset.
-func (c *Compiler) GetRules() (rules *Rules, err error) {
-	var r *C.YR_RULES
-	err = newError(C.yr_compiler_get_rules(c.cptr, &r))
-	if err == nil {
-		rules = &Rules{cptr: r}
-		runtime.SetFinalizer(rules, (*Rules).Destroy)
+func (c *Compiler) GetRules() (*Rules, error) {
+	var yrRules *C.YR_RULES
+	if err := newError(C.yr_compiler_get_rules(c.cptr, &yrRules)); err != nil {
+		return nil, err
 	}
-	return
+	r := &Rules{rules: &rules{cptr: yrRules}}
+	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	return r, nil
 }
 
 // Compile compiles rules and an (optional) set of variables into a

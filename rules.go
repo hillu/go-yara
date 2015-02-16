@@ -24,6 +24,10 @@ import (
 
 // Rules contains a compiled YARA ruleset.
 type Rules struct {
+	*rules
+}
+
+type rules struct {
 	cptr *C.YR_RULES
 }
 
@@ -165,39 +169,45 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 
 // LoadRules retrieves a compiled ruleset from filename.
 func LoadRules(filename string) (*Rules, error) {
-	var r *C.YR_RULES
+	var yrRules *C.YR_RULES
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	if err := newError(C.yr_rules_load(cfilename, &r)); err != nil {
+	if err := newError(C.yr_rules_load(cfilename, &yrRules)); err != nil {
 		return nil, err
 	}
-	rules := &Rules{cptr: r}
-	runtime.SetFinalizer(rules, (*Rules).Destroy)
-	return rules, nil
+	r := &Rules{rules: &rules{cptr: yrRules}}
+	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	return r, nil
 }
 
 // ReadRules retrieves a compiled ruleset from an io.Reader
 func ReadRules(rd io.Reader) (*Rules, error) {
-	var r *C.YR_RULES
+	var yrRules *C.YR_RULES
 	var stream C.YR_STREAM
 	stream.user_data = unsafe.Pointer(&rd)
 	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
-	if err := newError(C.yr_rules_load_stream(&stream, &r)); err != nil {
+	if err := newError(C.yr_rules_load_stream(&stream, &yrRules)); err != nil {
 		return nil, err
 	}
-	rules := &Rules{cptr: r}
-	runtime.SetFinalizer(rules, (*Rules).Destroy)
-	return rules, nil
+	r := &Rules{rules: &rules{cptr: yrRules}}
+	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	return r, nil
+}
+
+func (r *rules) finalize() {
+	C.yr_rules_destroy(r.cptr)
+	runtime.SetFinalizer(r, nil)
 }
 
 // Destroy destroys the YARA data structure representing a ruleset.
-// On creation, a Finalizer is automatically set up to do this.
+// Since a Finalizer for the underlying YR_RULES structure is
+// automatically set up on creation, it should not be necessary to
+// explicitly call this method.
 func (r *Rules) Destroy() {
-	if r.cptr != nil {
-		C.yr_rules_destroy(r.cptr)
-		r.cptr = nil
+	if r.rules != nil {
+		r.rules.finalize()
+		r.rules = nil
 	}
-	runtime.SetFinalizer(r, nil)
 }
 
 // DefineVariable defines a named variable for use by the compiler.
