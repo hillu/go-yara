@@ -41,9 +41,13 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 // into YARA's internal, binary form which in turn is used for
 // scanning files or memory blocks.
 type Compiler struct {
-	cptr     *C.YR_COMPILER
+	*compiler
 	Errors   []CompilerMessage
 	Warnings []CompilerMessage
+}
+
+type compiler struct {
+	cptr *C.YR_COMPILER
 }
 
 // A CompilerMessage contains an error or warning message produced
@@ -56,24 +60,30 @@ type CompilerMessage struct {
 
 // NewCompiler creates a YARA compiler.
 func NewCompiler() (*Compiler, error) {
-	var compiler *C.YR_COMPILER
-	if err := newError(C.yr_compiler_create(&compiler)); err != nil {
+	var yrCompiler *C.YR_COMPILER
+	if err := newError(C.yr_compiler_create(&yrCompiler)); err != nil {
 		return nil, err
 	}
-	c := &Compiler{cptr: compiler}
-	C.yr_compiler_set_callback(compiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback), unsafe.Pointer(c))
-	runtime.SetFinalizer(c, (*Compiler).Destroy)
+	c := &Compiler{compiler: &compiler{cptr: yrCompiler}}
+	C.yr_compiler_set_callback(yrCompiler, C.YR_COMPILER_CALLBACK_FUNC(C.compiler_callback), unsafe.Pointer(c))
+	runtime.SetFinalizer(c.compiler, (*compiler).finalize)
 	return c, nil
 }
 
-// Destroy destroys the YARA data structure representing a compiler.
-// On creation, a Finalizer is automatically set up to do this.
-func (c *Compiler) Destroy() {
-	if c.cptr != nil {
-		C.yr_compiler_destroy(c.cptr)
-		c.cptr = nil
-	}
+func (c *compiler) finalize() {
+	C.yr_compiler_destroy(c.cptr)
 	runtime.SetFinalizer(c, nil)
+}
+
+// Destroy destroys the YARA data structure representing a compiler.
+// Since a Finalizer for the underlying YR_COMPILER structure is
+// automatically set up on creation, it should not be necessary to
+// explicitly call this method.
+func (c *Compiler) Destroy() {
+	if c.compiler != nil {
+		c.compiler.finalize()
+		c.compiler = nil
+	}
 }
 
 // AddFile compiles rules from an os.File. Rules are added to the
