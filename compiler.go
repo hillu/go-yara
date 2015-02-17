@@ -6,6 +6,12 @@ package yara
 
 /*
 #cgo LDFLAGS: -lyara
+
+#ifdef _WIN32
+#define fdopen _fdopen
+#endif
+#include <stdio.h>
+
 #include <yara.h>
 
 void compiler_callback(int error_level, const char* file_name, int line_number, const char* message, void* user_data);
