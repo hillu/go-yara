@@ -6,7 +6,6 @@
 package yara
 
 /*
-#cgo LDFLAGS: -lyara
 #include <yara.h>
 
 int rules_callback(int message, void *message_data, void *user_data);

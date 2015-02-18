@@ -5,8 +5,6 @@
 package yara
 
 /*
-#cgo LDFLAGS: -lyara
-
 #ifdef _WIN32
 #define fdopen _fdopen
 #endif
