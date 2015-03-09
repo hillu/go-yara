@@ -78,14 +78,14 @@ func assertFalseRules(t *testing.T, rules []string, data []byte) {
 func TestLoad(t *testing.T) {
 	r, err := LoadRules("testdata/rules.yac")
 	if r == nil || err != nil {
-		t.Fatalf("LoadRules: %e", err)
+		t.Fatalf("LoadRules: %s", err)
 	}
 }
 
 func TestReader(t *testing.T) {
 	rd, err := os.Open("testdata/rules.yac")
 	if err != nil {
-		t.Fatalf("os.Open: %e", err)
+		t.Fatalf("os.Open: %s", err)
 	}
 	r, err := ReadRules(rd)
 	if err != nil {
@@ -101,7 +101,7 @@ func TestReader(t *testing.T) {
 func TestWriter(t *testing.T) {
 	rd, err := os.Open("testdata/rules.yac")
 	if err != nil {
-		t.Fatalf("os.Open: %e", err)
+		t.Fatalf("os.Open: %s", err)
 	}
 	compareBuf, _ := ioutil.ReadAll(rd)
 	r, _ := Compile("rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }",

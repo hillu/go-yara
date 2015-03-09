@@ -35,7 +35,7 @@ func TestFileWalk(t *testing.T) {
 			filepath.Walk(initialPath, func(name string, info os.FileInfo, inErr error) error {
 				fmt.Printf("[%02d] %s\n", i, name)
 				if inErr != nil {
-					fmt.Printf("[%02d] Walk to \"%s\": %e\n", i, name, inErr)
+					fmt.Printf("[%02d] Walk to \"%s\": %s\n", i, name, inErr)
 					return nil
 				}
 				if info.IsDir() && info.Mode()&os.ModeSymlink != 0 {
@@ -48,7 +48,7 @@ func TestFileWalk(t *testing.T) {
 				if m, err := r.ScanFile(name, 0, 0); err == nil {
 					fmt.Printf("[%02d] Scan \"%s\": %d\n", i, path.Base(name), len(m))
 				} else {
-					fmt.Printf("[%02d] Scan \"%s\": %e\n", i, path.Base(name), err)
+					fmt.Printf("[%02d] Scan \"%s\": %s\n", i, path.Base(name), err)
 				}
 				return nil
 			})

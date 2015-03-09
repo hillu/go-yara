@@ -383,7 +383,7 @@ func TestExternals(t *testing.T) {
 		}
 		m, _ := r.ScanMem([]byte("dummy"), 0, 0)
 		if sample.predicate != (len(m) > 0) {
-			t.Errorf("rule=%s params=%+v: expected %s, got %s",
+			t.Errorf("rule=%s params=%+v: expected %t, got %t",
 				sample.rule, sample.params, sample.predicate, (len(m) > 0))
 		}
 	}
