@@ -163,7 +163,7 @@ func (c *Compiler) DefineVariable(name string, value interface{}) (err error) {
 		err = newError(C.yr_compiler_define_string_variable(
 			c.cptr, cname, cvalue))
 	default:
-		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted.")
+		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
 	return
 }

@@ -47,7 +47,7 @@ func TestSimpleFileMatch(t *testing.T) {
 	t.Logf("Matches: %+v", m)
 }
 
-func TestEmpty (t *testing.T) {
+func TestEmpty(t *testing.T) {
 	r, _ := Compile("rule test { condition: true }", nil)
 	r.ScanMem([]byte{}, 0, 0)
 	t.Log("Scan of null-byte slice did not crash. Yay.")

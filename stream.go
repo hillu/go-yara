@@ -9,13 +9,13 @@ import (
 import "C"
 
 //export streamRead
-func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, user_data unsafe.Pointer) C.size_t {
+func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointer) C.size_t {
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
 	dst := uintptr(ptr)
 	buf := make([]byte, size)
-	rd := (*io.Reader)(user_data)
+	rd := (*io.Reader)(userData)
 	for i := 0; i < int(nmemb); i++ {
 		rc, err := (*rd).Read(buf)
 		if err != nil || rc < int(size) {
@@ -27,13 +27,13 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, user_data unsafe.Point
 }
 
 //export streamWrite
-func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, user_data unsafe.Pointer) C.size_t {
+func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointer) C.size_t {
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
 	src := uintptr(ptr)
 	buf := make([]byte, size)
-	wr := (*io.Writer)(user_data)
+	wr := (*io.Writer)(userData)
 	for i := 0; i < int(nmemb); i++ {
 		C.memcpy(unsafe.Pointer(&buf[0]), unsafe.Pointer(src+uintptr(i)*uintptr(size)), size)
 		rc, err := (*wr).Write(buf)
