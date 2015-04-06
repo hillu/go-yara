@@ -64,28 +64,33 @@ func newMatch(matches *[]MatchRule, namespace, identifier *C.char) {
 
 //export addMetaInt
 func addMetaInt(matches *[]MatchRule, identifier *C.char, value C.int) {
-	(*matches)[len(*matches)-1].Meta[C.GoString(identifier)] = int32(value)
+	i := len(*matches) - 1
+	(*matches)[i].Meta[C.GoString(identifier)] = int32(value)
 }
 
 //export addMetaString
 func addMetaString(matches *[]MatchRule, identifier *C.char, value *C.char) {
-	(*matches)[len(*matches)-1].Meta[C.GoString(identifier)] = C.GoString(value)
+	i := len(*matches) - 1
+	(*matches)[i].Meta[C.GoString(identifier)] = C.GoString(value)
 }
 
 //export addMetaBool
 func addMetaBool(matches *[]MatchRule, identifier *C.char, value C.int) {
-	(*matches)[len(*matches)-1].Meta[C.GoString(identifier)] = bool(value != 0)
+	i := len(*matches) - 1
+	(*matches)[i].Meta[C.GoString(identifier)] = bool(value != 0)
 }
 
 //export addTag
 func addTag(matches *[]MatchRule, tag *C.char) {
-	(*matches)[len(*matches)-1].Tags = append((*matches)[len(*matches)-1].Tags, C.GoString(tag))
+	i := len(*matches) - 1
+	(*matches)[i].Tags = append((*matches)[i].Tags, C.GoString(tag))
 }
 
 //export addString
 func addString(matches *[]MatchRule, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
-	(*matches)[len(*matches)-1].Strings = append(
-		(*matches)[len(*matches)-1].Strings,
+	i := len(*matches) - 1
+	(*matches)[i].Strings = append(
+		(*matches)[i].Strings,
 		MatchString{
 			Name:   C.GoString(identifier),
 			Offset: uint64(offset),
