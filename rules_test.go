@@ -47,6 +47,21 @@ func TestSimpleFileMatch(t *testing.T) {
 	t.Logf("Matches: %+v", m)
 }
 
+func TestSimpleFileDescriptorMatch(t *testing.T) {
+	r, _ := Compile(
+		"rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }",
+		nil)
+	tf, _ := ioutil.TempFile("", "TestSimpleFileMatch")
+	defer os.Remove(tf.Name())
+	tf.Write([]byte(" abc "))
+	tf.Seek(0, os.SEEK_SET)
+	m, err := r.ScanFileDescriptor(tf.Fd(), 0, 0)
+	if err != nil {
+		t.Errorf("ScanFile(%s): %s", tf.Name(), err)
+	}
+	t.Logf("Matches: %+v", m)
+}
+
 func TestEmpty(t *testing.T) {
 	r, _ := Compile("rule test { condition: true }", nil)
 	r.ScanMem([]byte{}, 0, 0)

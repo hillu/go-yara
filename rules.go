@@ -128,6 +128,18 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 	return
 }
 
+// ScanFileDescriptor scans a file using the ruleset.
+func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	err = newError(C.yr_rules_scan_fd(
+		r.cptr,
+		C.int(fd),
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.rules_callback),
+		unsafe.Pointer(&matches),
+		C.int(timeout/time.Second)))
+	return
+}
+
 // ScanFile scans a file using the ruleset.
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	cfilename := C.CString(filename)
