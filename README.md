@@ -7,7 +7,7 @@ close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
 A recent Git checkout of YARA after 3.3.0, with stream support (merged
-on 2015-02-12) is required.
+on 2015-02-12) and `yr_rules_scan_fd` (merged on 2015-04-30) is required.
 
 ## Installation
 
