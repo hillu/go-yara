@@ -132,7 +132,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	err = newError(C.yr_rules_scan_fd(
 		r.cptr,
-		C.int(fd),
+		C.YR_FILE_DESCRIPTOR(fd),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
