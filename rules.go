@@ -30,6 +30,8 @@ type rules struct {
 	cptr *C.YR_RULES
 }
 
+var dummy *[]MatchRule
+
 // A MatchRule represents a rule successfully matched against a block
 // of data.
 type MatchRule struct {
@@ -117,6 +119,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
+	dummy = &matches
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
 		ptr,
@@ -130,6 +133,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 
 // ScanFileDescriptor scans a file using the ruleset.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	dummy = &matches
 	err = newError(C.yr_rules_scan_fd(
 		r.cptr,
 		C.YR_FILE_DESCRIPTOR(fd),
@@ -144,6 +148,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
+	dummy = &matches
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
@@ -156,6 +161,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 
 // ScanProc scans a live process using the ruleset.
 func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []MatchRule, err error) {
+	dummy = &matches
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
