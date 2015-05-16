@@ -8,6 +8,8 @@ the `yara-python` implementation.
 
 A recent Git checkout of YARA after 3.3.0, with stream support (merged
 on 2015-02-12) and `yr_rules_scan_fd` (merged on 2015-04-30) is required.
+For a version of go-yara that is compatible with YARA 3.3.0, please
+use the "compat-yara-3.3" branch.
 
 ## Installation
 
