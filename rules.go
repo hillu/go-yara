@@ -8,6 +8,18 @@ package yara
 /*
 #include <yara.h>
 
+#ifdef _WIN32
+int _yr_rules_scan_fd(
+    YR_RULES* rules,
+    int fd,
+    int flags,
+    YR_CALLBACK_FUNC callback,
+    void* user_data,
+    int timeout);
+#else
+#define _yr_rules_scan_fd yr_rules_scan_fd
+#endif
+
 int rules_callback(int message, void *message_data, void *user_data);
 size_t stream_read(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t stream_write(void* ptr, size_t size, size_t nmemb, void* user_data);
@@ -134,9 +146,9 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 // ScanFileDescriptor scans a file using the ruleset.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	dummy = &matches
-	err = newError(C.yr_rules_scan_fd(
+	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
-		C.YR_FILE_DESCRIPTOR(fd),
+		C.int(fd),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(&matches),
