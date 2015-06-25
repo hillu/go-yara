@@ -9,6 +9,7 @@ package yara
 #define fdopen _fdopen
 #endif
 #include <stdio.h>
+#include <unistd.h>
 
 #include <yara.h>
 
@@ -95,11 +96,12 @@ func (c *Compiler) Destroy() {
 // AddFile compiles rules from an os.File. Rules are added to the
 // specified namespace.
 func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
-	fh, err := C.fdopen(C.int(file.Fd()), C.CString("r"))
+	fd := C.dup(C.int(file.Fd()))
+	fh, err := C.fdopen(fd, C.CString("r"))
 	if err != nil {
 		return err
 	}
-	defer C.free(unsafe.Pointer(fh))
+	defer C.fclose(fh)
 	var ns *C.char
 	if namespace != "" {
 		ns = C.CString(namespace)
