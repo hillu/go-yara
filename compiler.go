@@ -7,6 +7,7 @@ package yara
 /*
 #ifdef _WIN32
 #define fdopen _fdopen
+#define dup _dup
 #endif
 #include <stdio.h>
 #include <unistd.h>
