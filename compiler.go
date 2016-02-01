@@ -94,9 +94,9 @@ func (c *Compiler) Destroy() {
 	}
 }
 
-// AddFile compiles rules from an os.File. Rules are added to the
+// AddFile compiles rules from a file. Rules are added to the
 // specified namespace.
-func (c *Compiler) AddFile(file os.File, namespace string) (err error) {
+func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	fd := C.dup(C.int(file.Fd()))
 	fh, err := C.fdopen(fd, C.CString("r"))
 	if err != nil {
