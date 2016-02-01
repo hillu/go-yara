@@ -22,7 +22,13 @@ provided that `GOPATH` is set:
 Depending on what location libyara and its headers have been
 installed, proper `CFLAGS` and `LDFLAGS` may have to be added to
 `cgo.go` or be specified via environment variables (`CGO_CFLAGS` and
-`CGO_LDFLAGS`)
+`CGO_LDFLAGS`).
+
+Linker errors buried in the CGO output such as
+
+    undefined reference to `yr_compiler_add_file'
+
+probably mean that the linker is looking at an old YARA version.
 
 ### Windows
 
