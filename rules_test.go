@@ -2,8 +2,11 @@ package yara
 
 import (
 	"bytes"
+	"compress/bzip2"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -131,5 +134,36 @@ func TestWriter(t *testing.T) {
 	}
 	if bytes.Compare(compareBuf, newBuf) != 0 {
 		t.Error("buffers are not equal")
+	}
+}
+
+// compress/bzip2 seems to return short reads which apparently leads
+// to YARA complaining about corrupt files. Tested with Go 1.4, 1.5.
+func TestReaderBZIP2(t *testing.T) {
+	rulesBuf := bytes.NewBuffer(nil)
+	for i := 0; i < 10000; i++ {
+		fmt.Fprintf(rulesBuf, "rule test%d : tag%d { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }", i, i)
+	}
+	r, _ := Compile(string(rulesBuf.Bytes()), nil)
+	cmd := exec.Command("bzip2", "-c")
+	compressStream, _ := cmd.StdinPipe()
+	buf := bytes.NewBuffer(nil)
+	cmd.Stdout = buf
+	if err := cmd.Start(); err != nil {
+		t.Errorf("start bzip2 process: %s", err)
+		return
+	}
+	if err := r.Write(compressStream); err != nil {
+		t.Errorf("pipe to bzip2 process: %s", err)
+		return
+	}
+	compressStream.Close()
+	if err := cmd.Wait(); err != nil {
+		t.Errorf("wait for bzip2 process: %s", err)
+		return
+	}
+	if _, err := ReadRules(bzip2.NewReader(bytes.NewReader(buf.Bytes()))); err != nil {
+		t.Errorf("read using compress/bzip2: %s", err)
+		return
 	}
 }
