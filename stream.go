@@ -21,9 +21,12 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	buf := make([]byte, size)
 	rd := (*io.Reader)(userData)
 	for i := 0; i < int(nmemb); i++ {
-		rc, err := (*rd).Read(buf)
-		if err != nil || rc < int(size) {
-			return C.size_t(i)
+		var sz int
+		for offset := 0; offset < int(size); offset += sz {
+			var err error
+			if sz, err = (*rd).Read(buf[offset:]); err != nil {
+				return C.size_t(i)
+			}
 		}
 		C.memcpy(unsafe.Pointer(dst+uintptr(i)*uintptr(size)), unsafe.Pointer(&buf[0]), size)
 	}
@@ -40,9 +43,12 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 	wr := (*io.Writer)(userData)
 	for i := 0; i < int(nmemb); i++ {
 		C.memcpy(unsafe.Pointer(&buf[0]), unsafe.Pointer(src+uintptr(i)*uintptr(size)), size)
-		rc, err := (*wr).Write(buf)
-		if err != nil || rc < int(size) {
-			return C.size_t(i)
+		var sz int
+		for offset := 0; offset < int(size); offset += sz {
+			var err error
+			if sz, err = (*wr).Write(buf[offset:]); err != nil {
+				return C.size_t(i)
+			}
 		}
 	}
 	return nmemb
