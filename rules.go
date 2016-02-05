@@ -194,10 +194,12 @@ func (r *Rules) Save(filename string) (err error) {
 
 // Write writes a compiled ruleset to an io.Writer.
 func (r *Rules) Write(wr io.Writer) (err error) {
-	var stream C.YR_STREAM
+	var stream *C.YR_STREAM
+	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
+	defer C.free(unsafe.Pointer(stream))
 	stream.user_data = unsafe.Pointer(&wr)
 	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
-	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
+	err = newError(C.yr_rules_save_stream(r.cptr, stream))
 	return
 }
 
@@ -217,10 +219,12 @@ func LoadRules(filename string) (*Rules, error) {
 // ReadRules retrieves a compiled ruleset from an io.Reader
 func ReadRules(rd io.Reader) (*Rules, error) {
 	var yrRules *C.YR_RULES
-	var stream C.YR_STREAM
+	var stream *C.YR_STREAM
+	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
+	defer C.free(unsafe.Pointer(stream))
 	stream.user_data = unsafe.Pointer(&rd)
 	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
-	if err := newError(C.yr_rules_load_stream(&stream, &yrRules)); err != nil {
+	if err := newError(C.yr_rules_load_stream(stream, &yrRules)); err != nil {
 		return nil, err
 	}
 	r := &Rules{rules: &rules{cptr: yrRules}}
