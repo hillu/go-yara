@@ -5,7 +5,6 @@
 package yara
 
 import (
-	"io"
 	"unsafe"
 )
 
@@ -19,12 +18,11 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	}
 	dst := uintptr(ptr)
 	buf := make([]byte, size)
-	rd := (*io.Reader)(userData)
 	for i := 0; i < int(nmemb); i++ {
 		var sz int
 		for offset := 0; offset < int(size); offset += sz {
 			var err error
-			if sz, err = (*rd).Read(buf[offset:]); err != nil {
+			if sz, err = reader.Read(buf[offset:]); err != nil {
 				return C.size_t(i)
 			}
 		}
@@ -40,13 +38,12 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 	}
 	src := uintptr(ptr)
 	buf := make([]byte, size)
-	wr := (*io.Writer)(userData)
 	for i := 0; i < int(nmemb); i++ {
 		C.memcpy(unsafe.Pointer(&buf[0]), unsafe.Pointer(src+uintptr(i)*uintptr(size)), size)
 		var sz int
 		for offset := 0; offset < int(size); offset += sz {
 			var err error
-			if sz, err = (*wr).Write(buf[offset:]); err != nil {
+			if sz, err = writer.Write(buf[offset:]); err != nil {
 				return C.size_t(i)
 			}
 		}

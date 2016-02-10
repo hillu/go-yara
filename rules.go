@@ -29,6 +29,7 @@ import (
 	"errors"
 	"io"
 	"runtime"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -192,13 +193,23 @@ func (r *Rules) Save(filename string) (err error) {
 	return
 }
 
+var writer struct {
+	io.Writer
+	sync.Mutex
+}
+
 // Write writes a compiled ruleset to an io.Writer.
 func (r *Rules) Write(wr io.Writer) (err error) {
 	var stream *C.YR_STREAM
 	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
-	defer C.free(unsafe.Pointer(stream))
-	stream.user_data = unsafe.Pointer(&wr)
+	writer.Lock()
+	defer func() {
+		C.free(unsafe.Pointer(stream))
+		writer.Writer = nil
+		writer.Unlock()
+	}()
 	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
+	writer.Writer = wr
 	err = newError(C.yr_rules_save_stream(r.cptr, stream))
 	return
 }
@@ -216,14 +227,24 @@ func LoadRules(filename string) (*Rules, error) {
 	return r, nil
 }
 
+var reader struct {
+	io.Reader
+	sync.Mutex
+}
+
 // ReadRules retrieves a compiled ruleset from an io.Reader
 func ReadRules(rd io.Reader) (*Rules, error) {
 	var yrRules *C.YR_RULES
 	var stream *C.YR_STREAM
 	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
-	defer C.free(unsafe.Pointer(stream))
-	stream.user_data = unsafe.Pointer(&rd)
+	reader.Lock()
+	defer func() {
+		C.free(unsafe.Pointer(stream))
+		reader.Reader = nil
+		reader.Unlock()
+	}()
 	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
+	reader.Reader = rd
 	if err := newError(C.yr_rules_load_stream(stream, &yrRules)); err != nil {
 		return nil, err
 	}
