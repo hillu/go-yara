@@ -200,3 +200,14 @@ func Compile(rules string, variables map[string]interface{}) (r *Rules, err erro
 	r, err = c.GetRules()
 	return
 }
+
+// MustCompile is like Compile but panics if the rules and optional
+// variables can't be compiled. Like regexp.MustCompile, it allows for
+// simple, safe initialization of global or test data.
+func MustCompile(rules string, variables map[string]interface{}) (r *Rules) {
+	r, err := Compile(rules, variables)
+	if err != nil {
+		panic(err)
+	}
+	return
+}

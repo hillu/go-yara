@@ -15,3 +15,15 @@ func TestCompiler(t *testing.T) {
 		t.Logf("expected error: %s", err)
 	}
 }
+
+func TestPanic(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Error("MustCompile with broken data did not panic")
+		} else {
+			t.Logf("Everything ok, MustCompile panicked: %v", err)
+		}
+	}()
+	_ = MustCompile("asflkjkl", nil)
+}
