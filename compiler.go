@@ -23,15 +23,21 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"sync"
 	"unsafe"
 )
+
+var callbackCompiler struct {
+	c *Compiler
+	sync.Mutex
+}
 
 //export compilerCallback
 func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char, ptr unsafe.Pointer) {
 	if ptr == nil {
 		return
 	}
-	compiler := (*Compiler)(ptr)
+	c := callbackCompiler.c
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
@@ -39,9 +45,9 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 	}
 	switch errorLevel {
 	case C.YARA_ERROR_LEVEL_ERROR:
-		compiler.Errors = append(compiler.Errors, msg)
+		c.Errors = append(c.Errors, msg)
 	case C.YARA_ERROR_LEVEL_WARNING:
-		compiler.Warnings = append(compiler.Warnings, msg)
+		c.Warnings = append(c.Warnings, msg)
 	}
 }
 
@@ -73,7 +79,7 @@ func NewCompiler() (*Compiler, error) {
 		return nil, err
 	}
 	c := &Compiler{compiler: &compiler{cptr: yrCompiler}}
-	C.yr_compiler_set_callback(yrCompiler, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(c))
+	C.yr_compiler_set_callback(yrCompiler, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), nil)
 	runtime.SetFinalizer(c.compiler, (*compiler).finalize)
 	return c, nil
 }
@@ -110,6 +116,12 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	}
 	filename := C.CString(file.Name())
 	defer C.free(unsafe.Pointer(filename))
+	callbackCompiler.Lock()
+	callbackCompiler.c = c
+	defer func() {
+		callbackCompiler.c = nil
+		callbackCompiler.Unlock()
+	}()
 	numErrors := int(C.yr_compiler_add_file(c.cptr, fh, ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -130,6 +142,12 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	}
 	crules := C.CString(rules)
 	defer C.free(unsafe.Pointer(crules))
+	callbackCompiler.Lock()
+	callbackCompiler.c = c
+	defer func() {
+		callbackCompiler.c = nil
+		callbackCompiler.Unlock()
+	}()
 	numErrors := int(C.yr_compiler_add_string(c.cptr, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
