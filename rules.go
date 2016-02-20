@@ -21,8 +21,8 @@ int _yr_rules_scan_fd(
 #endif
 
 int rules_callback(int message, void *message_data, void *user_data);
-size_t stream_read(void* ptr, size_t size, size_t nmemb, void* user_data);
-size_t stream_write(void* ptr, size_t size, size_t nmemb, void* user_data);
+size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
+size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);
 */
 import "C"
 import (
@@ -210,7 +210,7 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
 	defer C.free(unsafe.Pointer(stream))
 	stream.user_data = unsafe.Pointer(id)
-	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
+	stream.write = C.YR_STREAM_WRITE_FUNC(C.streamWrite)
 
 	err = newError(C.yr_rules_save_stream(r.cptr, stream))
 	return
@@ -238,7 +238,7 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
 	defer C.free(unsafe.Pointer(stream))
 	stream.user_data = unsafe.Pointer(id)
-	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
+	stream.read = C.YR_STREAM_READ_FUNC(C.streamRead)
 
 	if err := newError(C.yr_rules_load_stream(stream, &yrRules)); err != nil {
 		return nil, err
