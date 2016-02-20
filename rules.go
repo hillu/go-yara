@@ -29,7 +29,6 @@ import (
 	"errors"
 	"io"
 	"runtime"
-	"sync"
 	"time"
 	"unsafe"
 )
@@ -67,7 +66,8 @@ func init() {
 }
 
 //export newMatch
-func newMatch(matches *[]MatchRule, namespace, identifier *C.char) {
+func newMatch(userData unsafe.Pointer, namespace, identifier *C.char) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	*matches = append(*matches, MatchRule{
 		Rule:      C.GoString(identifier),
 		Namespace: C.GoString(namespace),
@@ -78,31 +78,36 @@ func newMatch(matches *[]MatchRule, namespace, identifier *C.char) {
 }
 
 //export addMetaInt
-func addMetaInt(matches *[]MatchRule, identifier *C.char, value C.int) {
+func addMetaInt(userData unsafe.Pointer, identifier *C.char, value C.int) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = int32(value)
 }
 
 //export addMetaString
-func addMetaString(matches *[]MatchRule, identifier *C.char, value *C.char) {
+func addMetaString(userData unsafe.Pointer, identifier *C.char, value *C.char) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = C.GoString(value)
 }
 
 //export addMetaBool
-func addMetaBool(matches *[]MatchRule, identifier *C.char, value C.int) {
+func addMetaBool(userData unsafe.Pointer, identifier *C.char, value C.int) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = bool(value != 0)
 }
 
 //export addTag
-func addTag(matches *[]MatchRule, tag *C.char) {
+func addTag(userData unsafe.Pointer, tag *C.char) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Tags = append((*matches)[i].Tags, C.GoString(tag))
 }
 
 //export addString
-func addString(matches *[]MatchRule, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
+func addString(userData unsafe.Pointer, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
+	matches := callbackData.Get((*int)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Strings = append(
 		(*matches)[i].Strings,
@@ -132,27 +137,29 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	dummy = &matches
+	id := callbackData.Put(&matches)
+	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(&matches),
+		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
 	return
 }
 
 // ScanFileDescriptor scans a file using the ruleset.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	dummy = &matches
+	id := callbackData.Put(&matches)
+	defer callbackData.Delete(id)
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(&matches),
+		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
 	return
 }
@@ -161,26 +168,28 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	dummy = &matches
+	id := callbackData.Put(&matches)
+	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(&matches),
+		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
 	return
 }
 
 // ScanProc scans a live process using the ruleset.
 func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []MatchRule, err error) {
-	dummy = &matches
+	id := callbackData.Put(&matches)
+	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(&matches),
+		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
 	return
 }
@@ -193,23 +202,16 @@ func (r *Rules) Save(filename string) (err error) {
 	return
 }
 
-var writer struct {
-	io.Writer
-	sync.Mutex
-}
-
 // Write writes a compiled ruleset to an io.Writer.
 func (r *Rules) Write(wr io.Writer) (err error) {
-	var stream *C.YR_STREAM
-	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
-	writer.Lock()
-	defer func() {
-		C.free(unsafe.Pointer(stream))
-		writer.Writer = nil
-		writer.Unlock()
-	}()
+	id := callbackData.Put(wr)
+	defer callbackData.Delete(id)
+
+	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
+	defer C.free(unsafe.Pointer(stream))
+	stream.user_data = unsafe.Pointer(id)
 	stream.write = C.YR_STREAM_WRITE_FUNC(C.stream_write)
-	writer.Writer = wr
+
 	err = newError(C.yr_rules_save_stream(r.cptr, stream))
 	return
 }
@@ -227,24 +229,17 @@ func LoadRules(filename string) (*Rules, error) {
 	return r, nil
 }
 
-var reader struct {
-	io.Reader
-	sync.Mutex
-}
-
 // ReadRules retrieves a compiled ruleset from an io.Reader
 func ReadRules(rd io.Reader) (*Rules, error) {
 	var yrRules *C.YR_RULES
-	var stream *C.YR_STREAM
-	stream = (*C.YR_STREAM)(C.malloc((C.size_t)(unsafe.Sizeof(*stream))))
-	reader.Lock()
-	defer func() {
-		C.free(unsafe.Pointer(stream))
-		reader.Reader = nil
-		reader.Unlock()
-	}()
+	id := callbackData.Put(rd)
+	defer callbackData.Delete(id)
+
+	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
+	defer C.free(unsafe.Pointer(stream))
+	stream.user_data = unsafe.Pointer(id)
 	stream.read = C.YR_STREAM_READ_FUNC(C.stream_read)
-	reader.Reader = rd
+
 	if err := newError(C.yr_rules_load_stream(stream, &yrRules)); err != nil {
 		return nil, err
 	}

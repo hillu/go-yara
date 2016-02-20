@@ -5,6 +5,7 @@
 package yara
 
 import (
+	"io"
 	"unsafe"
 )
 
@@ -16,6 +17,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
+	reader := callbackData.Get((*int)(userData)).(io.Reader)
 	dst := uintptr(ptr)
 	buf := make([]byte, size)
 	for i := 0; i < int(nmemb); i++ {
@@ -36,6 +38,7 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
+	writer := callbackData.Get((*int)(userData)).(io.Writer)
 	src := uintptr(ptr)
 	buf := make([]byte, size)
 	for i := 0; i < int(nmemb); i++ {
