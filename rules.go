@@ -218,20 +218,20 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 
 // LoadRules retrieves a compiled ruleset from filename.
 func LoadRules(filename string) (*Rules, error) {
-	var yrRules *C.YR_RULES
+	r := &Rules{rules: &rules{}}
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	if err := newError(C.yr_rules_load(cfilename, &yrRules)); err != nil {
+	if err := newError(C.yr_rules_load(cfilename,
+		&(r.rules.cptr))); err != nil {
 		return nil, err
 	}
-	r := &Rules{rules: &rules{cptr: yrRules}}
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
 	return r, nil
 }
 
 // ReadRules retrieves a compiled ruleset from an io.Reader
 func ReadRules(rd io.Reader) (*Rules, error) {
-	var yrRules *C.YR_RULES
+	r := &Rules{rules: &rules{}}
 	id := callbackData.Put(rd)
 	defer callbackData.Delete(id)
 
@@ -240,10 +240,10 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 	stream.user_data = unsafe.Pointer(id)
 	stream.read = C.YR_STREAM_READ_FUNC(C.streamRead)
 
-	if err := newError(C.yr_rules_load_stream(stream, &yrRules)); err != nil {
+	if err := newError(C.yr_rules_load_stream(stream,
+		&(r.rules.cptr))); err != nil {
 		return nil, err
 	}
-	r := &Rules{rules: &rules{cptr: yrRules}}
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
 	return r, nil
 }
