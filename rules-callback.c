@@ -38,6 +38,7 @@ int rules_callback(int message, void *message_data, void *user_data) {
     yr_rule_strings_foreach(rule, string) {
       yr_string_matches_foreach(string, m) {
 #if YR_VERSION_HEX >= 0x030500
+        /* YR_MATCH members have been renamed in YARA 3.5 */
         addString(user_data, string->identifier, m->offset, m->data, (int)m->data_length);
 #else
         addString(user_data, string->identifier, m->offset, m->data, (int)m->length);
