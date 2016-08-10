@@ -31,7 +31,7 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 	if userData == nil {
 		return
 	}
-	c := callbackData.Get((*int)(userData)).(*Compiler)
+	c := callbackData.Get(uintptr(userData)).(*Compiler)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
