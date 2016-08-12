@@ -28,6 +28,7 @@ import "C"
 import (
 	"errors"
 	"io"
+	"reflect"
 	"runtime"
 	"time"
 	"unsafe"
@@ -107,15 +108,21 @@ func addTag(userData unsafe.Pointer, tag *C.char) {
 
 //export addString
 func addString(userData unsafe.Pointer, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
+	ms := MatchString{
+		Name:   C.GoString(identifier),
+		Offset: uint64(offset),
+		Data:   make([]byte, int(length)),
+	}
+
+	var tmpSlice []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&tmpSlice))
+	hdr.Data = uintptr(data)
+	hdr.Len = int(length)
+	copy(ms.Data, tmpSlice)
+
 	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
-	(*matches)[i].Strings = append(
-		(*matches)[i].Strings,
-		MatchString{
-			Name:   C.GoString(identifier),
-			Offset: uint64(offset),
-			Data:   C.GoBytes(data, length),
-		})
+	(*matches)[i].Strings = append((*matches)[i].Strings, ms)
 }
 
 // ScanFlags are used to tweak the behavior of Scan* functions.
