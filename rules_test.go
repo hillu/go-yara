@@ -167,3 +167,18 @@ func TestReaderBZIP2(t *testing.T) {
 		return
 	}
 }
+
+// See https://github.com/hillu/go-yara/issues/5
+func TestScanMemCgoPointer(t *testing.T) {
+	r := makeRules(t,
+		"rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }")
+	buf := &bytes.Buffer{}
+	buf.Write([]byte(" abc "))
+	if err := func() (p interface{}) {
+		defer func() { p = recover() }()
+		r.ScanMem(buf.Bytes(), 0, 0)
+		return nil
+	}(); err != nil {
+		t.Errorf("ScanMem panicked: %s", err)
+	}
+}
