@@ -6,8 +6,9 @@ Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
-YARA 3.4.0 is required. For a version of go-yara that is compatible
-with YARA 3.3.0, please use the "compat-yara-3.3" branch.
+YARA 3.4.0 or higher is required for full functionality. If you need
+to build with YARA 3.3.0, please build with the `yara3.3` build tag.
+(The `compat-yara-3.3` branch has been removed.)
 
 ## Installation
 
@@ -35,14 +36,10 @@ probably mean that the linker is looking at an old YARA version.
 I have not yet built go-yara *on* Windows, only used the MinGW-w64
 provided on Debian. The YARA library was built like this:
 
-    $ ./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto CFLAGS=-D__MINGW_USE_VC2005_COMPAT
+    $ ./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto
     [...]
     $ make
     $ make install prefix=/path/to/i686-w64-mingw32
-
-I found that the `CFLAGS` parameter was necessary to avoid problems
-due to a missing `time32` symbol when linking 32bit Windows
-executables.
 
 Compiling and linking `go-yara` against this library was achieved like
 this:
