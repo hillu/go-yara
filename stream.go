@@ -24,7 +24,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 		var sz int
 		for offset := 0; offset < int(size); offset += sz {
 			var err error
-			if sz, err = reader.Read(buf[offset:]); err != nil {
+			if sz, err = reader.Read(buf[offset:]); sz < int(size) && err != nil {
 				return C.size_t(i)
 			}
 		}
