@@ -6,6 +6,7 @@ package yara
 
 import (
 	"io"
+	"reflect"
 	"unsafe"
 )
 
@@ -18,19 +19,30 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 		return nmemb
 	}
 	reader := callbackData.Get(uintptr(userData)).(io.Reader)
-	dst := uintptr(ptr)
-	buf := make([]byte, size)
+	buf := make([]byte, 0)
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
+	hdr.Data = uintptr(ptr)
+	hdr.Len = int(size * nmemb)
+	hdr.Cap = hdr.Len
+	s := int(size)
 	for i := 0; i < int(nmemb); i++ {
-		var sz int
-		for offset := 0; offset < int(size); offset += sz {
-			var err error
-			if sz, err = reader.Read(buf[offset:]); sz < int(size) && err != nil {
-				return C.size_t(i)
-			}
+		if sz, err := io.ReadFull(reader, buf[i*s:(i+1)*s]); sz < int(size) && err != nil {
+			return C.size_t(i)
 		}
-		C.memcpy(unsafe.Pointer(dst+uintptr(i)*uintptr(size)), unsafe.Pointer(&buf[0]), size)
 	}
 	return nmemb
+}
+
+func writeFull(w io.Writer, buf []byte) (n int, err error) {
+	var i int
+	for n < len(buf) {
+		i, err = w.Write(buf[n:])
+		n += i
+		if err != nil {
+			break
+		}
+	}
+	return
 }
 
 //export streamWrite
@@ -39,16 +51,15 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 		return nmemb
 	}
 	writer := callbackData.Get(uintptr(userData)).(io.Writer)
-	src := uintptr(ptr)
-	buf := make([]byte, size)
+	buf := make([]byte, 0)
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
+	hdr.Data = uintptr(ptr)
+	hdr.Len = int(size * nmemb)
+	hdr.Cap = hdr.Len
+	s := int(size)
 	for i := 0; i < int(nmemb); i++ {
-		C.memcpy(unsafe.Pointer(&buf[0]), unsafe.Pointer(src+uintptr(i)*uintptr(size)), size)
-		var sz int
-		for offset := 0; offset < int(size); offset += sz {
-			var err error
-			if sz, err = writer.Write(buf[offset:]); err != nil {
-				return C.size_t(i)
-			}
+		if sz, err := writeFull(writer, buf[i*s:(i+1)*s]); sz < int(size) && err != nil {
+			return C.size_t(i)
 		}
 	}
 	return nmemb
