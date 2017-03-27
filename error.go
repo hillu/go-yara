@@ -23,7 +23,7 @@ func newError(code C.int) error {
 
 // FIXME: This should be generated from yara/error.h
 var errorStrings = map[C.int]string{
-	C.ERROR_INSUFICIENT_MEMORY:           "insuficient memory",
+	C.ERROR_INSUFICIENT_MEMORY:           "insufficient memory",
 	C.ERROR_COULD_NOT_ATTACH_TO_PROCESS:  "could not attach to process",
 	C.ERROR_COULD_NOT_OPEN_FILE:          "could not open file",
 	C.ERROR_COULD_NOT_MAP_FILE:           "could not map file",
