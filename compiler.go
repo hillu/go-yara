@@ -28,9 +28,6 @@ import (
 
 //export compilerCallback
 func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char, userData unsafe.Pointer) {
-	if userData == nil {
-		return
-	}
 	c := callbackData.Get(uintptr(userData)).(*Compiler)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),

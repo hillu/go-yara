@@ -27,3 +27,12 @@ func TestPanic(t *testing.T) {
 	}()
 	_ = MustCompile("asflkjkl", nil)
 }
+
+func TestWarnings(t *testing.T) {
+	c, _ := NewCompiler()
+	c.AddString("rule foo { bar }", "")
+	if len(c.Errors) == 0 {
+		t.Error()
+	}
+	t.Logf("Recorded Errors=%#v, Warnings=%#v", c.Errors, c.Warnings)
+}
