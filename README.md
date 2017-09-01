@@ -57,7 +57,7 @@ to be passed to the `go` tool:
 
 - `GOOS`, `GOARCH` indicate the cross compilation
   target.
-- `CGO_ENABLED` is set to 1 beacuse it defaults to 0 when
+- `CGO_ENABLED` is set to 1 because it defaults to 0 when
   cross-compiling.
 - `CC` has to specified because the `go` tool has no knowledge on what
   C compiler to use (it defaults to the system C compiler, usually
