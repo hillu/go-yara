@@ -7,7 +7,7 @@
 // This file contains any additional error codes introduced on the
 // master branch since yara 3.6.0.
 
-// +build yara_snapshot
+// +build yara3.7
 
 package yara
 

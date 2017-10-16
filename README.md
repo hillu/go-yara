@@ -88,7 +88,8 @@ _go-yara_ is tested with the latest stable version of YARA. If you
 need to to build with an older version of YARA, certain features that
 are not present in older versions can be excluded by passing a build
 tag such as `yara3.3`, `yara3.4`, `yara3.5`. If you want to build with
-a git snapshot of YARA, pass a build tag `yara_snapshot`.
+a git snapshot of YARA, use a build tag corresponding to the upcoming
+stable YARA version, currently `yara_3.7`.
 
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch.
