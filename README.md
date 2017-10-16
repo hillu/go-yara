@@ -7,10 +7,6 @@ Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
-YARA 3.4.0 or higher is required for full functionality. If you need
-to build with YARA 3.3.0, please build with the `yara3.3` build tag.
-(The `compat-yara-3.3` branch has been removed.)
-
 ## Installation
 
 ### Unix
@@ -26,16 +22,10 @@ go install github.com/hillu/go-yara
 
 The _pkg-config_ program should be able to output the correct compiler
 and linker flags from the `yara.pc` file that has been generated and
-installed by _YARA_'s build system. If this is not the case, the build
-tag `no_pkg_config` can be used to override _pkg-config_'s output and
-the flags have to be set via the `CGO_CFLAGS` and `CGO_LDFLAGS`
-environment variables, e.g.:
-
-```
-export CGO_CFLAGS="-I${YARA_SRC}/libyara/include"
-export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
-go install github.com/hillu/go-yara -tags no_pkg_config
-```
+installed by _YARA_'s build system. If _libyara_ has been installed to
+a custom location, the `PKG_CONFIG_PATH` environment variable can be
+used to point _pkg-config_ at the right `yara.pc` file. If
+_pkg-config_ cannot be used at all, please see "Build Tags" below.
 
 Linker errors in the compiler output such as
 
@@ -46,52 +36,72 @@ _libyara_.
 
 ### Cross-building for Windows
 
-_YARA_ and _go-yara_ can be cross-built on a Debian system as long as the
-Go compiler contains Windows runtime libraries with CGO support
-([cf.](https://github.com/hillu/golang-go-cross)).
+_go-yara_ can be cross-built on a current Debian system using the
+MinGW cross compiler (_gcc-mingw-w64_) if the Go compiler contains
+Windows runtime libraries with CGO support
+([cf.](https://github.com/hillu/golang-go-cross)). After _libyara_ has
+been built from the source tree with the MinGW compiler using the
+usual `./configure && make && make install`, _go-yara_ can be built
+and installed. Some environment variables need to be set when running
+`go build` or `go install`:
 
-After _libyara_ has been built from the source tree with the MinGW
-compiler using the usual `./configure && make && make install`,
-_go-yara_ can be built and installed. Some environment variables need
-to be passed to the `go` tool:
-
-- `GOOS`, `GOARCH` indicate the cross compilation
-  target.
+- `GOOS`, `GOARCH` indicate the cross compilation target.
 - `CGO_ENABLED` is set to 1 beacuse it defaults to 0 when
   cross-compiling.
-- `CC` has to specified because the `go` tool has no knowledge on what
+- `CC` has to specified because the _go_ tool has no knowledge on what
   C compiler to use (it defaults to the system C compiler, usually
   gcc).
-- The C compiler in turn needs to know where to find headers and
-  libraries, these locations are specified via the `CGO_CFLAGS` and
-  `CGO_LDFLAGS` variables.
+- `PKG_CONFIG_PATH` is set so the _go_ tool can determine correct
+  locations for headers and libraries through _pkg-config_.
 
 32bit:
 
 ```
-cd ${YARA_SRC}
-./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto
-make
-make install prefix=./i686-w64-mingw32
-cd ${GO_YARA_SRC}
-GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc \
-  CGO_CFLAGS=-I${YARA_SRC}/i686-w64-mingw32/include \
-  CGO_LDFLAGS=-L${YARA_SRC}/i686-w64-mingw32/lib \
-  go install --ldflags '-extldflags "-static"' github.com/hillu/go-yara
+$ cd ${YARA_SRC} \
+  && ./bootstrap.sh \
+  && ./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/i686-w64-mingw32 \
+  && make -C ${YARA_SRC} \
+  && make -C ${YARA_SRC} install 
+$ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
+  CC=i686-w64-mingw32-gcc \
+  PKG_CONFIG_PATH=${YARA_SRC}/i686-w64-mingw32/lib/pkgconfig \
+  go install -ldflags '-extldflags "-static"' github.com/hillu/go-yara
 ```
 
 64bit:
 
 ```
-cd ${YARA_SRC}
-./configure --host=x86_64-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto
-make
-make install prefix=./x86_64-w64-mingw32
-cd ${GO_YARA_SRC}
-GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
-  CGO_CFLAGS=-I${YARA_SRC}/x86_64-w64-mingw32/include \
-  CGO_LDFLAGS=-L${YARA_SRC}/x86_64-w64-mingw32/lib \
-  go install --ldflags '-extldflags "-static"' github.com/hillu/go-yara
+$ cd ${YARA_SRC} \
+  && ./bootstrap.sh \
+  && ./configure --host=x86_64-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/x86_64-w64-mingw32 \
+  && make -C ${YARA_SRC} \
+  && make -C ${YARA_SRC} install 
+$ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
+  CC=x86_64-w64-mingw32-gcc \
+  PKG_CONFIG_PATH=${YARA_SRC}/x86_64-w64-mingw32/lib/pkgconfig \
+  go install -ldflags '-extldflags "-static"' github.com/hillu/go-yara
+```
+
+## Build Tags
+
+_go-yara_ is tested with the latest stable version of YARA. If you
+need to to build with an older version of YARA, certain features that
+are not present in older versions can be excluded by passing a build
+tag such as `yara3.3`, `yara3.4`, `yara3.5`. If you want to build with
+a git snapshot of YARA, pass a build tag `yara_snapshot`.
+
+The build tag `yara_static` can be used to tell the Go toolchain to
+run _pkg-config_ with the `--static` switch.
+
+The build tag `no_pkg_config` can be used to tell the Go toolchain not
+to use _pkg-config_'s output. In this case, any compiler or linker
+flags have to be set via the `CGO_CFLAGS` and `CGO_LDFLAGS`
+environment variables, e.g.:
+
+```
+export CGO_CFLAGS="-I${YARA_SRC}/libyara/include"
+export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
+go install github.com/hillu/go-yara -tags no_pkg_config
 ```
 
 ## License
