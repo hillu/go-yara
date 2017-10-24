@@ -148,8 +148,7 @@ func TestWriterBuffer(t *testing.T) {
 	r, _ := Compile(string(rulesBuf.Bytes()), nil)
 	buf := new(bytes.Buffer)
 	if err := r.Write(buf); err != nil {
-		t.Errorf("write to bytes.Buffer: %s", err)
-		return
+		t.Fatalf("write to bytes.Buffer: %s", err)
 	}
 }
 
@@ -169,21 +168,17 @@ func TestReaderBZIP2(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
 	if err := cmd.Start(); err != nil {
-		t.Errorf("start bzip2 process: %s", err)
-		return
+		t.Fatalf("start bzip2 process: %s", err)
 	}
 	if err := r.Write(compressStream); err != nil {
-		t.Errorf("pipe to bzip2 process: %s", err)
-		return
+		t.Fatalf("pipe to bzip2 process: %s", err)
 	}
 	compressStream.Close()
 	if err := cmd.Wait(); err != nil {
-		t.Errorf("wait for bzip2 process: %s", err)
-		return
+		t.Fatalf("wait for bzip2 process: %s", err)
 	}
 	if _, err := ReadRules(bzip2.NewReader(bytes.NewReader(buf.Bytes()))); err != nil {
-		t.Errorf("read using compress/bzip2: %s", err)
-		return
+		t.Fatalf("read using compress/bzip2: %s", err)
 	}
 }
 
