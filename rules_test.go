@@ -160,7 +160,10 @@ func TestReaderBZIP2(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		fmt.Fprintf(rulesBuf, "rule test%d : tag%d { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }", i, i)
 	}
-	r, _ := Compile(string(rulesBuf.Bytes()), nil)
+	r, err := Compile(string(rulesBuf.Bytes()), nil)
+	if err != nil {
+		t.Fatalf("compile text for bzip2 rule compression: %s", err)
+	}
 	cmd := exec.Command("bzip2", "-c")
 	compressStream, _ := cmd.StdinPipe()
 	buf := bytes.NewBuffer(nil)
