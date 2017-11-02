@@ -5,7 +5,11 @@
 
 Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
-the `yara-python` implementation.
+the `yara-python` implementation. 
+
+## Documentation
+
+go-yara is documented on [GoDoc: hillu/go-yara](https://godoc.org/github.com/hillu/go-yara).
 
 ## Installation
 
