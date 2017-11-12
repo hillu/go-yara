@@ -4,10 +4,9 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-// This file contains any additional error codes introduced on the
-// master branch since yara 3.6.0.
+// This file contains additional error codes introduced with yara 3.7.0.
 
-// +build yara3.7
+// +build !yara3.3, !yara3.4, !yara3.5, !yara3.6
 
 package yara
 
@@ -16,4 +15,5 @@ import "C"
 
 func init() {
 	errorStrings[C.ERROR_TOO_MANY_STRINGS] = "too many strings"
+	errorStrings[C.ERROR_INTEGER_OVERFLOW] = "integer overflow"
 }
