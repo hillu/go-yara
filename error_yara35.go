@@ -6,7 +6,7 @@
 
 // This file contains additional error codes introduced with yara 3.5.0.
 
-// +build !yara3.3, !yara3.4
+// +build !yara3.3,!yara3.4
 
 package yara
 
