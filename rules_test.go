@@ -219,7 +219,7 @@ func TestRule(t *testing.T) {
 				t.Error("Got wrong tags for t3")
 			}
 		default:
-			t.Errorf("Found unexpected rule name: %s", r.Identifier)
+			t.Errorf("Found unexpected rule name: %#v", r.Identifier())
 		}
 	}
 }
