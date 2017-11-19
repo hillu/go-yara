@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"reflect"
 	"testing"
 )
 
@@ -194,5 +195,31 @@ func TestScanMemCgoPointer(t *testing.T) {
 		return nil
 	}(); err != nil {
 		t.Errorf("ScanMem panicked: %s", err)
+	}
+}
+
+func TestRule(t *testing.T) {
+	r := makeRules(t, `
+		rule t1 : tag1 { meta: author = "Author One" strings: $a = "abc" fullword condition: $a }
+        rule t2 : tag2 x y { meta: author = "Author Two" strings: $b = "def" condition: $b }
+        rule t3 : tag3 x y z { meta: author = "Author Three" strings: $c = "ghi" condition: $c }`)
+	for _, r := range r.GetRules() {
+		t.Logf("%s:%s %#v", r.Namespace(), r.Identifier(), r.Tags())
+		switch r.Identifier() {
+		case "t1":
+			if !reflect.DeepEqual(r.Tags(), []string{"tag1"}) {
+				t.Error("Got wrong tags for t1")
+			}
+		case "t2":
+			if !reflect.DeepEqual(r.Tags(), []string{"tag2", "x", "y"}) {
+				t.Error("Got wrong tags for t2")
+			}
+		case "t3":
+			if !reflect.DeepEqual(r.Tags(), []string{"tag3", "x", "y", "z"}) {
+				t.Error("Got wrong tags for t3")
+			}
+		default:
+			t.Errorf("Found unexpected rule name: %s", r.Identifier)
+		}
 	}
 }
