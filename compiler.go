@@ -183,6 +183,7 @@ func Compile(rules string, variables map[string]interface{}) (r *Rules, err erro
 	if c, err = NewCompiler(); err != nil {
 		return
 	}
+	defer c.Destroy()
 	for k, v := range variables {
 		if err = c.DefineVariable(k, v); err != nil {
 			return
