@@ -141,7 +141,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
-	r.keepAlive()
+	keepAlive(r)
 	return
 }
 
@@ -158,7 +158,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
-	r.keepAlive()
+	keepAlive(r)
 	return
 }
 
@@ -173,7 +173,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 		C.YR_CALLBACK_FUNC(C.rules_callback),
 		unsafe.Pointer(id),
 		C.int(timeout/time.Second)))
-	r.keepAlive()
+	keepAlive(r)
 	return
 }
 
@@ -182,7 +182,7 @@ func (r *Rules) Save(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	err = newError(C.yr_rules_save(r.cptr, cfilename))
-	r.keepAlive()
+	keepAlive(r)
 	return
 }
 
@@ -243,7 +243,7 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
-	r.keepAlive()
+	keepAlive(r)
 	return
 }
 
