@@ -2,6 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/hillu/go-yara?status.svg)](https://godoc.org/github.com/hillu/go-yara)
 [![Travis](https://travis-ci.org/hillu/go-yara.svg?branch=master)](https://travis-ci.org/hillu/go-yara)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hillu/go-yara)](https://goreportcard.com/report/github.com/hillu/go-yara)
 
 Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
