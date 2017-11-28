@@ -30,7 +30,7 @@ import (
 
 //export compilerCallback
 func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char, userData unsafe.Pointer) {
-	c := callbackData.Get(uintptr(userData)).(*Compiler)
+	c := callbackData.Get(*(*uintptr)(userData)).(*Compiler)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
@@ -110,7 +110,7 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	defer C.free(unsafe.Pointer(filename))
 	id := callbackData.Put(c)
 	defer callbackData.Delete(id)
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(id))
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(&id))
 	numErrors := int(C.yr_compiler_add_file(c.cptr, fh, ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -134,7 +134,7 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	defer C.free(unsafe.Pointer(crules))
 	id := callbackData.Put(c)
 	defer callbackData.Delete(id)
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(id))
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(&id))
 	numErrors := int(C.yr_compiler_add_string(c.cptr, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char

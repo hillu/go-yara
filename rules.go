@@ -55,7 +55,7 @@ func init() {
 
 //export newMatch
 func newMatch(userData unsafe.Pointer, namespace, identifier *C.char) {
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	*matches = append(*matches, MatchRule{
 		Rule:      C.GoString(identifier),
 		Namespace: C.GoString(namespace),
@@ -67,28 +67,28 @@ func newMatch(userData unsafe.Pointer, namespace, identifier *C.char) {
 
 //export addMetaInt
 func addMetaInt(userData unsafe.Pointer, identifier *C.char, value C.int) {
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = int32(value)
 }
 
 //export addMetaString
 func addMetaString(userData unsafe.Pointer, identifier *C.char, value *C.char) {
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = C.GoString(value)
 }
 
 //export addMetaBool
 func addMetaBool(userData unsafe.Pointer, identifier *C.char, value C.int) {
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Meta[C.GoString(identifier)] = bool(value != 0)
 }
 
 //export addTag
 func addTag(userData unsafe.Pointer, tag *C.char) {
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Tags = append((*matches)[i].Tags, C.GoString(tag))
 }
@@ -107,7 +107,7 @@ func addString(userData unsafe.Pointer, identifier *C.char, offset C.uint64_t, d
 	hdr.Len = int(length)
 	copy(ms.Data, tmpSlice)
 
-	matches := callbackData.Get(uintptr(userData)).(*[]MatchRule)
+	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
 	i := len(*matches) - 1
 	(*matches)[i].Strings = append((*matches)[i].Strings, ms)
 }
@@ -139,7 +139,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		C.size_t(len(buf)),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(id),
+		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
 	return
@@ -156,7 +156,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 		cfilename,
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(id),
+		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
 	return
@@ -171,7 +171,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 		C.int(pid),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(id),
+		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
 	return

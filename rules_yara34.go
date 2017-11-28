@@ -47,7 +47,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 		C.int(fd),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.rules_callback),
-		unsafe.Pointer(id),
+		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
 	return
