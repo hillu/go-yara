@@ -80,6 +80,8 @@ func (r *Rule) Tags() (tags []string) {
 	return
 }
 
+// Metas returns the rule's meta variables in a map. Values can be of
+// type string, int, bool, or nil.
 func (r *Rule) Metas() (metas map[string]interface{}) {
 	metas = make(map[string]interface{})
 	var size C.int
