@@ -11,6 +11,7 @@ package yara
 /*
 #include <yara.h>
 #include <stdlib.h>
+#include <string.h>
 
 char* includeCallback(char*, char*, char*, void*);
 void freeCallback(char*, void*);
@@ -48,8 +49,9 @@ func includeCallback(name, filename, namespace *C.char, user_data unsafe.Pointer
 	if buf := callbackFunc(
 		C.GoString(name), C.GoString(filename), C.GoString(namespace),
 	); buf != nil {
-		buf = append(buf, 0)
-		return (*C.char)(C.CBytes(buf))
+		outbuf := C.calloc(1, C.size_t(len(buf)+1))
+		C.memcpy(outbuf, unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+		return (*C.char)(outbuf)
 	}
 	return nil
 }
