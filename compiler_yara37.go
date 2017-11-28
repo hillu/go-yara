@@ -43,8 +43,8 @@ func (c *Compiler) DisableIncludes() {
 }
 
 //export includeCallback
-func includeCallback(name, filename, namespace *C.char, user_data unsafe.Pointer) *C.char {
-	id := *((*uintptr)(user_data))
+func includeCallback(name, filename, namespace *C.char, userData unsafe.Pointer) *C.char {
+	id := *((*uintptr)(userData))
 	callbackFunc := callbackData.Get(id).(CompilerIncludeFunc)
 	if buf := callbackFunc(
 		C.GoString(name), C.GoString(filename), C.GoString(namespace),
@@ -57,9 +57,9 @@ func includeCallback(name, filename, namespace *C.char, user_data unsafe.Pointer
 }
 
 //export freeCallback
-func freeCallback(callback_result_ptr *C.char, user_data unsafe.Pointer) {
-	if callback_result_ptr != nil {
-		C.free(unsafe.Pointer(callback_result_ptr))
+func freeCallback(callbackResultPtr *C.char, userData unsafe.Pointer) {
+	if callbackResultPtr != nil {
+		C.free(unsafe.Pointer(callbackResultPtr))
 	}
 	return
 }
