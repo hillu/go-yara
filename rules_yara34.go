@@ -58,12 +58,14 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 	id := callbackData.Put(wr)
 	defer callbackData.Delete(id)
 
-	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
-	defer C.free(unsafe.Pointer(stream))
-	stream.user_data = unsafe.Pointer(id)
-	stream.write = C.YR_STREAM_WRITE_FUNC(C.streamWrite)
-
-	err = newError(C.yr_rules_save_stream(r.cptr, stream))
+	stream := C.YR_STREAM{
+		write: C.YR_STREAM_WRITE_FUNC(C.streamWrite),
+		// The complaint from go vet about possible misuse of
+		// unsafe.Pointer is wrong: user_data will be interpreted as
+		// an uintptr on the other side of the callback
+		user_data: unsafe.Pointer(id),
+	}
+	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
 	keepAlive(r)
 	return
 }
@@ -74,12 +76,13 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 	id := callbackData.Put(rd)
 	defer callbackData.Delete(id)
 
-	stream := (*C.YR_STREAM)(C.malloc((C.sizeof_YR_STREAM)))
-	defer C.free(unsafe.Pointer(stream))
-	stream.user_data = unsafe.Pointer(id)
-	stream.read = C.YR_STREAM_READ_FUNC(C.streamRead)
-
-	if err := newError(C.yr_rules_load_stream(stream,
+	stream := C.YR_STREAM{
+		read: C.YR_STREAM_READ_FUNC(C.streamRead),
+		// The complaint from go vet about possible misuse of
+		// unsafe.Pointer is wrong, see above.
+		user_data: unsafe.Pointer(id),
+	}
+	if err := newError(C.yr_rules_load_stream(&stream,
 		&(r.rules.cptr))); err != nil {
 		return nil, err
 	}
