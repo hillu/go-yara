@@ -18,6 +18,7 @@ void freeCallback(char*, void*);
 */
 import "C"
 import (
+	"reflect"
 	"unsafe"
 )
 
@@ -49,9 +50,15 @@ func includeCallback(name, filename, namespace *C.char, userData unsafe.Pointer)
 	if buf := callbackFunc(
 		C.GoString(name), C.GoString(filename), C.GoString(namespace),
 	); buf != nil {
-		outbuf := C.calloc(1, C.size_t(len(buf)+1))
-		C.memcpy(outbuf, unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
-		return (*C.char)(outbuf)
+		ptr := C.calloc(1, C.size_t(len(buf)+1))
+		if ptr == nil {
+			return nil
+		}
+		outbuf := make([]byte, 0)
+		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&outbuf))
+		hdr.Data, hdr.Len = uintptr(ptr), len(buf)+1
+		copy(outbuf, buf)
+		return (*C.char)(ptr)
 	}
 	return nil
 }
