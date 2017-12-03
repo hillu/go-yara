@@ -28,7 +28,7 @@ int _yr_rules_scan_fd(
 size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);
 
-int rules_callback(int message, void *message_data, void *user_data);
+int stdScanCallback(int, void*, void*);
 */
 import "C"
 import (
@@ -46,7 +46,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 		r.cptr,
 		C.int(fd),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.rules_callback),
+		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)

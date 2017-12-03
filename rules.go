@@ -10,7 +10,7 @@ package yara
 /*
 #include <yara.h>
 
-int rules_callback(int message, void *message_data, void *user_data);
+int stdScanCallback(int, void*, void*);
 */
 import "C"
 import (
@@ -138,7 +138,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 		ptr,
 		C.size_t(len(buf)),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.rules_callback),
+		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
@@ -155,7 +155,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 		r.cptr,
 		cfilename,
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.rules_callback),
+		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
@@ -170,7 +170,7 @@ func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []M
 		r.cptr,
 		C.int(pid),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.rules_callback),
+		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(r)
