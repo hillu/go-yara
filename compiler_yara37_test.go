@@ -1,3 +1,5 @@
+//+build !yara3.3,!yara3.4,!yara3.5,!yara3.6
+
 package yara
 
 import (
