@@ -107,13 +107,13 @@ func main() {
 
 	if processScan {
 		for _, pid := range pids {
-			log.Printf("Scanning pid %d...", pid)
+			log.Printf("Scanning process %d...", pid)
 			m, err := r.ScanProc(pid, 0, 0)
 			printMatches(m, err)
 		}
 	} else {
 		for _, filename := range args {
-			log.Printf("Scanning %s... ", filename)
+			log.Printf("Scanning file %s... ", filename)
 			m, err := r.ScanFile(filename, 0, 0)
 			printMatches(m, err)
 		}
