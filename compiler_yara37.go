@@ -32,7 +32,8 @@ import (
 // included file. A return value of nil signals an error to the YARA
 // compiler.
 //
-// See yr_compiler_set_include_callback
+// See also: yr_compiler_set_include_callback in the YARA C API
+// documentation.
 type CompilerIncludeFunc func(name, filename, namespace string) []byte
 
 // DisableIncludes disables all include statements in the compiler.

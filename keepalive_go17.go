@@ -2,8 +2,6 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-// This file contains functionality available in go1.7 onward
-
 // +build go1.7
 
 package yara
@@ -12,6 +10,8 @@ import (
 	"runtime"
 )
 
+// The post-Go-1.7 version of keepAlive() contains a "call" to
+// runtime.KeepAlive which is recognized as a hint by the compiler.
 func keepAlive(i interface{}) {
 	runtime.KeepAlive(i)
 }

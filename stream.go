@@ -35,6 +35,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	return nmemb
 }
 
+// writeFull does its best to write all of buf to w. See io.ReadFull.
 func writeFull(w io.Writer, buf []byte) (n int, err error) {
 	var i int
 	for n < len(buf) {

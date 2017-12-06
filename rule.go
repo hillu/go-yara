@@ -9,14 +9,18 @@ package yara
 /*
 #include <yara.h>
 
+// rule_identifier is a union accessor function.
 static const char* rule_identifier(YR_RULE* r) {
 	return r->identifier;
 }
 
+// rule_namespace is a union accessor function.
 static const char* rule_namespace(YR_RULE* r) {
 	return r->ns->name;
 }
 
+// rule_tags returns pointers to the tag names associated with a rule,
+// using YARA's own implementation
 static void rule_tags(YR_RULE* r, const char *tags[], int *n) {
 	const char *tag;
 	int i = 0;
@@ -29,6 +33,8 @@ static void rule_tags(YR_RULE* r, const char *tags[], int *n) {
 	return;
 }
 
+// rule_tags returns pointers to the meta variables associated with a
+// rule, using YARA's own implementation
 static void rule_metas(YR_RULE* r, const YR_META *metas[], int *n) {
 	const YR_META *meta;
 	int i = 0;
@@ -41,6 +47,7 @@ static void rule_metas(YR_RULE* r, const YR_META *metas[], int *n) {
 	return;
 }
 
+// meta is union accessor accessor function.
 static int32_t meta(YR_META *m, const char** identifier, char** string, int64_t *integer) {
 	*identifier = m->identifier;
 	*string = m->string;
@@ -51,9 +58,7 @@ static int32_t meta(YR_META *m, const char** identifier, char** string, int64_t 
 import "C"
 
 // Rule represents a single rule as part of a ruleset
-type Rule struct {
-	cptr *C.YR_RULE
-}
+type Rule struct{ cptr *C.YR_RULE }
 
 // Identifier returns the rule's name.
 func (r *Rule) Identifier() string {
