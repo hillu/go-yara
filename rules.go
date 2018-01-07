@@ -163,7 +163,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 }
 
 // ScanProc scans a live process using the ruleset.
-func (r *Rules) ScanProc(pid int, flags int, timeout time.Duration) (matches []MatchRule, err error) {
+func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
 	id := callbackData.Put(&matches)
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
