@@ -47,6 +47,11 @@ int stdScanCallback(int message, void *message_data, void *user_data) {
 #endif
       }
     }
+  } else if (message == CALLBACK_MSG_IMPORT_MODULE) {
+    YR_MODULE_IMPORT* module_import = (YR_MODULE_IMPORT*) message_data;
+    struct getModuleData_return r = getModuleData(user_data, (char*) module_import->module_name);
+    module_import->module_data = r.r0;
+    module_import->module_data_size = r.r1;
   }
   return CALLBACK_CONTINUE;
 }

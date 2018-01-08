@@ -38,19 +38,28 @@ import (
 	"unsafe"
 )
 
-// ScanFileDescriptor scans a file using the ruleset.
-func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	id := callbackData.Put(&matches)
-	defer callbackData.Delete(id)
+// ScanFileDescriptorWithOptions scans a file using the given options.
+func (r *Rules) ScanFileDescriptorWithOptions(fd uintptr, options ScanOptions) (matches []MatchRule, err error) {
+	ctx := scanContext{
+		matches: &matches,
+		options: &options,
+	}
+	ctxID := callbackData.Put(&ctx)
+	defer callbackData.Delete(ctxID)
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
-		C.int(flags),
+		C.int(options.Flags),
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
-		unsafe.Pointer(&id),
-		C.int(timeout/time.Second)))
+		unsafe.Pointer(&ctxID),
+		C.int(options.Timeout/time.Second)))
 	keepAlive(r)
 	return
+}
+
+// ScanFileDescriptor scans a file using the ruleset.
+func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	return r.ScanFileDescriptorWithOptions(fd, ScanOptions{Flags: flags, Timeout: timeout})
 }
 
 // Write writes a compiled ruleset to an io.Writer.
