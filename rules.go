@@ -190,7 +190,7 @@ func (r *Rules) ScanMemWithOptions(buf []byte, options ScanOptions) (matches []M
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
-		C.int(options.Flags),
+		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
@@ -216,7 +216,7 @@ func (r *Rules) ScanFileWithOptions(filename string, options ScanOptions) (match
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
-		C.int(options.Flags),
+		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
@@ -240,7 +240,7 @@ func (r *Rules) ScanProcWithOptions(pid int, options ScanOptions) (matches []Mat
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
-		C.int(options.Flags),
+		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
