@@ -87,6 +87,7 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
 		unsafe.Pointer(&id),
 	)
+	keepAlive(id)
 	keepAlive(c)
 	return
 }

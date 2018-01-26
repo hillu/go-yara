@@ -116,6 +116,7 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
+	keepAlive(id)
 	keepAlive(c)
 	return
 }
@@ -140,6 +141,7 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
+	keepAlive(id)
 	keepAlive(c)
 	return
 }

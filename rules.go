@@ -194,6 +194,7 @@ func (r *Rules) ScanMemWithOptions(buf []byte, options ScanOptions) (matches []M
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
+	keepAlive(ctxID)
 	keepAlive(r)
 	return
 }
@@ -220,6 +221,7 @@ func (r *Rules) ScanFileWithOptions(filename string, options ScanOptions) (match
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
+	keepAlive(ctxID)
 	keepAlive(r)
 	return
 }
@@ -244,6 +246,7 @@ func (r *Rules) ScanProcWithOptions(pid int, options ScanOptions) (matches []Mat
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&ctxID),
 		C.int(options.Timeout/time.Second)))
+	keepAlive(ctxID)
 	keepAlive(r)
 	return
 }
