@@ -49,6 +49,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 		C.YR_CALLBACK_FUNC(C.stdScanCallback),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
+	keepAlive(id)
 	keepAlive(r)
 	return
 }
@@ -66,6 +67,7 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 		user_data: unsafe.Pointer(id),
 	}
 	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
+	keepAlive(id)
 	keepAlive(r)
 	return
 }
@@ -87,5 +89,6 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 		return nil, err
 	}
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	keepAlive(id)
 	return r, nil
 }
