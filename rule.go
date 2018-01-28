@@ -47,12 +47,12 @@ static void rule_metas(YR_RULE* r, const YR_META *metas[], int *n) {
 	return;
 }
 
-// meta is union accessor accessor function.
-static int32_t meta(YR_META *m, const char** identifier, char** string, int64_t *integer) {
+// meta_get is an accessor function for unions that are not directly
+// accessible from Go because CGO does not understand them.
+static void meta_get(YR_META *m, const char** identifier, char** string) {
 	*identifier = m->identifier;
 	*string = m->string;
-	*integer = m->integer;
-	return m->type;
+	return;
 }
 */
 import "C"
@@ -85,8 +85,8 @@ func (r *Rule) Tags() (tags []string) {
 	return
 }
 
-// Metas returns the rule's meta variables in a map. Values can be of
-// type string, int, bool, or nil.
+// Metas returns a map containing the rule's meta variables. Values
+// can be of type string, int, bool, or nil.
 func (r *Rule) Metas() (metas map[string]interface{}) {
 	metas = make(map[string]interface{})
 	var size C.int
@@ -98,16 +98,16 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 	C.rule_metas(r.cptr, &mptrs[0], &size)
 	for _, m := range mptrs {
 		var id, str *C.char
-		var n C.int64_t
-		switch C.meta(m, &id, &str, &n) {
+		C.meta_get(m, &id, &str)
+		switch m._type {
 		case C.META_TYPE_NULL:
 			metas[C.GoString(id)] = nil
 		case C.META_TYPE_STRING:
 			metas[C.GoString(id)] = C.GoString(str)
 		case C.META_TYPE_INTEGER:
-			metas[C.GoString(id)] = int(n)
+			metas[C.GoString(id)] = int(m.integer)
 		case C.META_TYPE_BOOLEAN:
-			metas[C.GoString(id)] = n != 0
+			metas[C.GoString(id)] = m.integer != 0
 		}
 	}
 	return
