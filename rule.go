@@ -54,8 +54,42 @@ static void meta_get(YR_META *m, const char** identifier, char** string) {
 	*string = m->string;
 	return;
 }
+
+// rule_strings returns pointers to the matching strings associated
+// with a rule, using YARA's own implementation.
+static void rule_strings(YR_RULE* r, const YR_STRING *strings[], int *n) {
+	const YR_STRING *string;
+	int i = 0;
+	yr_rule_strings_foreach(r, string) {
+		if (i < *n)
+			strings[i] = string;
+		i++;
+	}
+	*n = i;
+	return;
+}
+
+// string_identifier is a union accessor function.
+static const char* string_identifier(YR_STRING* s) {
+	return s->identifier;
+}
+
+// string_matches
+static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
+	const YR_MATCH *match;
+	int i = 0;
+	yr_string_matches_foreach(s, match) {
+		if (i < *n)
+			matches[i] = match;
+		i++;
+	};
+	*n = i;
+	return;
+}
+
 */
 import "C"
+import "unsafe"
 
 // Rule represents a single rule as part of a ruleset
 type Rule struct{ cptr *C.YR_RULE }
@@ -111,4 +145,55 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 		}
 	}
 	return
+}
+
+// String represents a string as part of a rule
+type String struct{ cptr *C.YR_STRING }
+
+// Strings returns the rule's strings
+func (r *Rule) Strings() (strs []String) {
+	var size C.int
+	C.rule_strings(r.cptr, nil, &size)
+	if size == 0 {
+		return
+	}
+	ptrs := make([]*C.YR_STRING, int(size))
+	C.rule_strings(r.cptr, &ptrs[0], &size)
+	for _, ptr := range ptrs {
+		strs = append(strs, String{ptr})
+	}
+	return
+}
+
+// Identifier returns the string's name
+func (s *String) Identifier() string {
+	return C.GoString(C.string_identifier(s.cptr))
+}
+
+// Match represents a string match
+type Match struct{ cptr *C.YR_MATCH }
+
+// Matches returns all matches that have been recorded for the string.
+func (s *String) Matches() (matches []Match) {
+	var size C.int
+	C.string_matches(s.cptr, nil, &size)
+	ptrs := make([]*C.YR_MATCH, int(size))
+	if size == 0 {
+		return
+	}
+	C.string_matches(s.cptr, &ptrs[0], &size)
+	for _, ptr := range ptrs {
+		matches = append(matches, Match{ptr})
+	}
+	return
+}
+
+// Data returns the blob of data associated with the string match
+func (m *Match) Data() []byte {
+	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
+}
+
+// Offset returns the offset at which the string match occurred
+func (m *Match) Offset() int64 {
+	return int64(m.cptr.offset)
 }
