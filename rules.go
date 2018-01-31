@@ -220,9 +220,9 @@ func (r *Rules) Destroy() {
 
 // DefineVariable defines a named variable for use by the compiler.
 // Boolean, int64, float64, and string types are supported.
-func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
-	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
+func (r *Rules) DefineVariable(identifier string, value interface{}) (err error) {
+	cid := C.CString(identifier)
+	defer C.free(unsafe.Pointer(cid))
 	switch value.(type) {
 	case bool:
 		var v int
@@ -230,19 +230,19 @@ func (r *Rules) DefineVariable(name string, value interface{}) (err error) {
 			v = 1
 		}
 		err = newError(C.yr_rules_define_boolean_variable(
-			r.cptr, cname, C.int(v)))
+			r.cptr, cid, C.int(v)))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		value := toint64(value)
 		err = newError(C.yr_rules_define_integer_variable(
-			r.cptr, cname, C.int64_t(value)))
+			r.cptr, cid, C.int64_t(value)))
 	case float64:
 		err = newError(C.yr_rules_define_float_variable(
-			r.cptr, cname, C.double(value.(float64))))
+			r.cptr, cid, C.double(value.(float64))))
 	case string:
 		cvalue := C.CString(value.(string))
 		defer C.free(unsafe.Pointer(cvalue))
 		err = newError(C.yr_rules_define_string_variable(
-			r.cptr, cname, cvalue))
+			r.cptr, cid, cvalue))
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
