@@ -53,7 +53,6 @@ func TestCompilerCrash(t *testing.T) {
 				runtime.GC()
 			}
 		}
-		return
 	}(t, done)
 	for i := 0; i < 10000; i++ {
 		t.Logf("compile %d", i)

@@ -55,23 +55,3 @@ int stdScanCallback(int message, void *message_data, void *user_data) {
   }
   return CALLBACK_CONTINUE;
 }
-
-#ifdef _WIN32
-/*
-Helper function that is merely used to cast fd from int to HANDLE.
-CGO treats HANDLE (void*) to an unsafe.Pointer. This confuses the
-go1.4 garbage collector, leading to runtime errors such as:
-
-runtime: garbage collector found invalid heap pointer *(0x5b80ff14+0x4)=0xa0 s=nil
-*/
-int _yr_rules_scan_fd(
-    YR_RULES* rules,
-    int fd,
-    int flags,
-    YR_CALLBACK_FUNC callback,
-    void* user_data,
-    int timeout)
-{
-  return yr_rules_scan_fd(rules, (YR_FILE_DESCRIPTOR)fd, flags, callback, user_data, timeout);
-}
-#endif
