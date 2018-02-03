@@ -49,10 +49,6 @@ type MatchString struct {
 	Data   []byte
 }
 
-func init() {
-	_ = C.yr_initialize()
-}
-
 //export newMatch
 func newMatch(ctxID unsafe.Pointer, namespace, identifier *C.char) {
 	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
