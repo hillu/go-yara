@@ -80,13 +80,16 @@ func scanCallbackFunc(message C.int, messageData, ctxID unsafe.Pointer) C.int {
 			moduleData, abort, err = cb.OnImportModule(C.GoString(mi.module_name))
 			if !abort && err == nil {
 				l := C.size_t(len(moduleData))
-				b := C.malloc(l)
 				if l > 0 {
+					b := C.malloc(l)
 					C.memcpy(b, unsafe.Pointer(&moduleData[0]), l)
+					mi.module_data = b
+					mi.module_data_size = l
+					ctx.freeOnFinalize(b)
+				} else {
+					mi.module_data = nil
+					mi.module_data_size = 0
 				}
-				ctx.freeOnFinalize(b)
-				mi.module_data = b
-				mi.module_data_size = l
 			}
 		}
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
