@@ -110,7 +110,7 @@ func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Du
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
-		C.int(flags),
+		C.int(flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&ctxid),
 		C.int(timeout/time.Second)))
@@ -139,7 +139,7 @@ func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout t
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
-		C.int(flags),
+		C.int(flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&ctxid),
 		C.int(timeout/time.Second)))
@@ -166,7 +166,7 @@ func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Dura
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
-		C.int(flags),
+		C.int(flags)|C.SCAN_FLAGS_NO_TRYCATCH,
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&ctxid),
 		C.int(timeout/time.Second)))

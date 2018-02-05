@@ -64,7 +64,7 @@ func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, time
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
-		C.int(flags),
+		C.int(flags)|C.SCAN_FLAGS_PROCESS_MEMORY,
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&ctxid),
 		C.int(timeout/time.Second)))

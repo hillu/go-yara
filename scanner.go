@@ -90,7 +90,7 @@ func (s *Scanner) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.
 	C.yr_scanner_set_callback(
 		s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(&ctxid))
 	C.yr_scanner_set_timeout(s.cptr, C.int(timeout.Seconds()))
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
+	C.yr_scanner_set_flags(s.cptr, C.int(flags)|C.SCAN_FLAGS_NO_TRYCATCH)
 	err = newError(C.yr_scanner_scan_mem(s.cptr, ptr, C.size_t(len(buf))))
 	keepAlive(ctxid)
 	keepAlive(s)
