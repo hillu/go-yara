@@ -10,12 +10,11 @@ package yara
 /*
 #include <yara.h>
 
-int stdScanCallback(int, void*, void*);
+int scanCallbackFunc(int, void*, void*);
 */
 import "C"
 import (
 	"errors"
-	"reflect"
 	"runtime"
 	"time"
 	"unsafe"
@@ -49,85 +48,11 @@ type MatchString struct {
 	Data   []byte
 }
 
-//export newMatch
-func newMatch(ctxID unsafe.Pointer, namespace, identifier *C.char) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	*ctx.matches = append(*ctx.matches, MatchRule{
-		Rule:      C.GoString(identifier),
-		Namespace: C.GoString(namespace),
-		Tags:      []string{},
-		Meta:      map[string]interface{}{},
-		Strings:   []MatchString{},
-	})
-}
-
-//export addMetaInt
-func addMetaInt(ctxID unsafe.Pointer, identifier *C.char, value C.int) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	i := len(*ctx.matches) - 1
-	(*ctx.matches)[i].Meta[C.GoString(identifier)] = int32(value)
-}
-
-//export addMetaString
-func addMetaString(ctxID unsafe.Pointer, identifier *C.char, value *C.char) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	i := len(*ctx.matches) - 1
-	(*ctx.matches)[i].Meta[C.GoString(identifier)] = C.GoString(value)
-}
-
-//export addMetaBool
-func addMetaBool(ctxID unsafe.Pointer, identifier *C.char, value C.int) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	i := len(*ctx.matches) - 1
-	(*ctx.matches)[i].Meta[C.GoString(identifier)] = bool(value != 0)
-}
-
-//export addTag
-func addTag(ctxID unsafe.Pointer, tag *C.char) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	i := len(*ctx.matches) - 1
-	(*ctx.matches)[i].Tags = append((*ctx.matches)[i].Tags, C.GoString(tag))
-}
-
-//export addString
-func addString(ctxID unsafe.Pointer, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
-	ms := MatchString{
-		Name:   C.GoString(identifier),
-		Offset: uint64(offset),
-		Data:   make([]byte, int(length)),
-	}
-
-	var tmpSlice []byte
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&tmpSlice))
-	hdr.Data = uintptr(data)
-	hdr.Len = int(length)
-	copy(ms.Data, tmpSlice)
-
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	i := len(*ctx.matches) - 1
-	(*ctx.matches)[i].Strings = append((*ctx.matches)[i].Strings, ms)
-}
-
-//export getModuleData
-func getModuleData(ctxID unsafe.Pointer, moduleName *C.char) (unsafe.Pointer, C.size_t) {
-	ctx := callbackData.Get(*(*uintptr)(ctxID)).(*scanContext)
-	data, ok := ctx.options.ModulesData[C.GoString(moduleName)]
-	if ok {
-		dataLen := C.size_t(len(data))
-		b := C.malloc(dataLen)
-		C.memcpy(b, unsafe.Pointer(&data[0]), dataLen)
-		ctx.freeOnFinalize(b)
-		return b, dataLen
-	}
-	return nil, 0
-}
-
 // scanContext holds data required during the scan of a single memory buffer
-// file or process. The context is passed to the scan callback.
+// file or process.
 type scanContext struct {
-	cptrs   []unsafe.Pointer
-	options *ScanOptions
-	matches *[]MatchRule
+	cptrs    []unsafe.Pointer
+	callback Callback
 }
 
 func newScanContext() *scanContext {
@@ -162,94 +87,92 @@ const (
 	ScanFlagsProcessMemory = C.SCAN_FLAGS_PROCESS_MEMORY
 )
 
-// ScanOptions contains the options used during the scanning with any of the
-// Scan*WithOptions functions.
-type ScanOptions struct {
-	Flags       ScanFlags
-	Timeout     time.Duration
-	ModulesData map[string][]byte
+// ScanMem scans an in-memory buffer using the ruleset, returning
+// matches via a list of MatchRule objects.
+func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanMemWithCallback(buf, flags, timeout, &cb)
+	matches = cb
+	return
 }
 
-// ScanMemWithOptions scans an in-memory buffer using the provided options.
-func (r *Rules) ScanMemWithOptions(buf []byte, options ScanOptions) (matches []MatchRule, err error) {
+// ScanMemWithCallback scans an in-memory buffer using the ruleset,
+// calling methods on the ScanCallback object for the various events
+// generated from libyara.
+func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Duration, cb Callback) (err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	ctx := scanContext{
-		matches: &matches,
-		options: &options,
-	}
-	ctxID := callbackData.Put(&ctx)
-	defer callbackData.Delete(ctxID)
+	ctxid := callbackData.Put(&scanContext{callback: cb})
+	defer callbackData.Delete(ctxid)
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
-		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
-		unsafe.Pointer(&ctxID),
-		C.int(options.Timeout/time.Second)))
-	keepAlive(ctxID)
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
+		unsafe.Pointer(&ctxid),
+		C.int(timeout/time.Second)))
+	keepAlive(ctxid)
 	keepAlive(r)
 	return
 }
 
-// ScanMem scans an in-memory buffer using the ruleset.
-func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	return r.ScanMemWithOptions(buf, ScanOptions{Flags: flags, Timeout: timeout})
+// ScanFile scans a file using the ruleset, returning matches via a
+// list of MatchRule objects.
+func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanFileWithCallback(filename, flags, timeout, &cb)
+	matches = cb
+	return
 }
 
-// ScanFileWithOptions scans a file using the provided options.
-func (r *Rules) ScanFileWithOptions(filename string, options ScanOptions) (matches []MatchRule, err error) {
+// ScanFileWithCallback scans a file using the ruleset, calling
+// methods on the ScanCallback object for the various events generated
+// from libyara.
+func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb Callback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	ctx := scanContext{
-		matches: &matches,
-		options: &options,
-	}
-	ctxID := callbackData.Put(&ctx)
-	defer callbackData.Delete(ctxID)
+	ctxid := callbackData.Put(&scanContext{callback: cb})
+	defer callbackData.Delete(ctxid)
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
-		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
-		unsafe.Pointer(&ctxID),
-		C.int(options.Timeout/time.Second)))
-	keepAlive(ctxID)
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
+		unsafe.Pointer(&ctxid),
+		C.int(timeout/time.Second)))
+	keepAlive(ctxid)
 	keepAlive(r)
 	return
 }
 
-// ScanFile scans a file using the ruleset.
-func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	return r.ScanFileWithOptions(filename, ScanOptions{Flags: flags, Timeout: timeout})
+// ScanProc scans a live process using the ruleset, returning matches
+// via a list of MatchRule objects.
+func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanProcWithCallback(pid, flags, timeout, &cb)
+	matches = cb
+	return
 }
 
-// ScanProcWithOptions scans a live process the provided options.
-func (r *Rules) ScanProcWithOptions(pid int, options ScanOptions) (matches []MatchRule, err error) {
-	ctx := scanContext{
-		matches: &matches,
-		options: &options,
-	}
-	ctxID := callbackData.Put(&ctx)
-	defer callbackData.Delete(ctxID)
+// ScanProcWithCallback scans a live process using the ruleset,
+// calling methods on the ScanCallback object for the various events
+// generated from libyara.
+func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb Callback) (err error) {
+	ctxid := callbackData.Put(&scanContext{callback: cb})
+	defer callbackData.Delete(ctxid)
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
-		C.int(options.Flags)|C.SCAN_FLAGS_NO_TRYCATCH,
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
-		unsafe.Pointer(&ctxID),
-		C.int(options.Timeout/time.Second)))
-	keepAlive(ctxID)
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
+		unsafe.Pointer(&ctxid),
+		C.int(timeout/time.Second)))
+	keepAlive(ctxid)
 	keepAlive(r)
 	return
-}
-
-// ScanProc scans a live process using the ruleset.
-func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	return r.ScanProcWithOptions(pid, ScanOptions{Flags: flags, Timeout: timeout})
 }
 
 // Save writes a compiled ruleset to filename.
@@ -329,4 +252,8 @@ func (r *Rules) GetRules() (rv []Rule) {
 		rv = append(rv, Rule{(*C.YR_RULE)(p)})
 	}
 	return
+}
+
+func init() {
+	_ = C.yr_initialize()
 }

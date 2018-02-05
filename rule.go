@@ -197,3 +197,16 @@ func (m *Match) Data() []byte {
 func (m *Match) Offset() int64 {
 	return int64(m.cptr.offset)
 }
+
+func (r *Rule) getMatchStrings() (matchstrings []MatchString) {
+	for _, s := range r.Strings() {
+		for _, m := range s.Matches() {
+			matchstrings = append(matchstrings, MatchString{
+				Name:   s.Identifier(),
+				Offset: uint64(m.Offset()),
+				Data:   m.Data(),
+			})
+		}
+	}
+	return
+}

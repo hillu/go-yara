@@ -11,10 +11,13 @@ import (
 	"testing"
 )
 
-func makeRules(t *testing.T, rule string) *Rules {
+func makeRulesWithVars(t *testing.T, rule string, vars map[string]interface{}) *Rules {
 	c, err := NewCompiler()
 	if c == nil || err != nil {
 		t.Fatal("NewCompiler():", err)
+	}
+	for identifier, value := range vars {
+		c.DefineVariable(identifier, value)
 	}
 	if err = c.AddString(rule, ""); err != nil {
 		t.Fatal("AddString():", err)
@@ -24,6 +27,10 @@ func makeRules(t *testing.T, rule string) *Rules {
 		t.Fatal("GetRules:", err)
 	}
 	return r
+}
+
+func makeRules(t *testing.T, rule string) *Rules {
+	return makeRulesWithVars(t, rule, nil)
 }
 
 func TestSimpleMatch(t *testing.T) {
@@ -238,5 +245,39 @@ func TestRule(t *testing.T) {
 		default:
 			t.Errorf("Found unexpected rule name: %#v", r.Identifier())
 		}
+	}
+}
+
+type callback struct {
+	MatchingRules []*Rule
+}
+
+func (cb *callback) OnImportModule(module string) ([]byte, bool, error) {
+	if module == "tests" {
+		return []byte("test module data"), false, nil
+	}
+	return nil, false, nil
+}
+
+func (cb *callback) OnRuleMatching(r *Rule) (bool, error) {
+	if cb.MatchingRules == nil {
+		cb.MatchingRules = make([]*Rule, 0)
+	}
+	cb.MatchingRules = append(cb.MatchingRules, r)
+	return false, nil
+}
+
+func TestImportModuleCallback(t *testing.T) {
+	r := makeRules(t, `
+		import "tests"
+		rule t { condition: tests.module_data == "test module data" }`)
+	buf := &bytes.Buffer{}
+	buf.Write([]byte("not used"))
+
+	cb := callback{}
+	r.ScanMemWithCallback(buf.Bytes(), 0, 0, &cb)
+
+	if len(cb.MatchingRules) != 1 {
+		t.Errorf("Expecting one match, found %d", len(cb.MatchingRules))
 	}
 }

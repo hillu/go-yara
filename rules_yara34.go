@@ -36,7 +36,7 @@ int _yr_rules_scan_fd(
 size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);
 
-int stdScanCallback(int, void*, void*);
+int scanCallbackFunc(int, void*, void*);
 */
 import "C"
 import (
@@ -46,29 +46,31 @@ import (
 	"unsafe"
 )
 
-// ScanFileDescriptorWithOptions scans a file using the given options.
-func (r *Rules) ScanFileDescriptorWithOptions(fd uintptr, options ScanOptions) (matches []MatchRule, err error) {
-	ctx := scanContext{
-		matches: &matches,
-		options: &options,
-	}
-	ctxID := callbackData.Put(&ctx)
-	defer callbackData.Delete(ctxID)
-	err = newError(C._yr_rules_scan_fd(
-		r.cptr,
-		C.int(fd),
-		C.int(options.Flags),
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
-		unsafe.Pointer(&ctxID),
-		C.int(options.Timeout/time.Second)))
-	keepAlive(ctxID)
-	keepAlive(r)
+// ScanFileDescriptor scans a file using the ruleset, returning
+// matches via a list of MatchRule objects.
+func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanFileDescriptorWithCallback(fd, flags, timeout, &cb)
+	matches = cb
 	return
 }
 
-// ScanFileDescriptor scans a file using the ruleset.
-func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	return r.ScanFileDescriptorWithOptions(fd, ScanOptions{Flags: flags, Timeout: timeout})
+// ScanFileDescriptor scans a file using the ruleset, calling methods
+// on the ScanCallback object for the various events generated from
+// libyara.
+func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb Callback) (err error) {
+	ctxid := callbackData.Put(&scanContext{callback: cb})
+	defer callbackData.Delete(ctxid)
+	err = newError(C._yr_rules_scan_fd(
+		r.cptr,
+		C.int(fd),
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
+		unsafe.Pointer(&ctxid),
+		C.int(timeout/time.Second)))
+	keepAlive(ctxid)
+	keepAlive(r)
+	return
 }
 
 // Write writes a compiled ruleset to an io.Writer.
