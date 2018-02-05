@@ -249,12 +249,13 @@ func TestRule(t *testing.T) {
 }
 
 type callback struct {
+	ModuleData    []byte
 	MatchingRules []*Rule
 }
 
 func (cb *callback) OnImportModule(module string) ([]byte, bool, error) {
 	if module == "tests" {
-		return []byte("test module data"), false, nil
+		return cb.ModuleData, false, nil
 	}
 	return nil, false, nil
 }
@@ -275,6 +276,15 @@ func TestImportModuleCallback(t *testing.T) {
 	buf.Write([]byte("not used"))
 
 	cb := callback{}
+
+	// Test with empty module data
+	r.ScanMemWithCallback(buf.Bytes(), 0, 0, &cb)
+	if len(cb.MatchingRules) == 1 {
+		t.Errorf("Expecting no matches, found %d", len(cb.MatchingRules))
+	}
+
+	// With the expected module data
+	cb.ModuleData = []byte("test module data")
 	r.ScanMemWithCallback(buf.Bytes(), 0, 0, &cb)
 
 	if len(cb.MatchingRules) != 1 {

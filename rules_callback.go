@@ -81,7 +81,9 @@ func scanCallbackFunc(message C.int, messageData, ctxID unsafe.Pointer) C.int {
 			if !abort && err == nil {
 				l := C.size_t(len(moduleData))
 				b := C.malloc(l)
-				C.memcpy(b, unsafe.Pointer(&moduleData[0]), l)
+				if l > 0 {
+					C.memcpy(b, unsafe.Pointer(&moduleData[0]), l)
+				}
 				ctx.freeOnFinalize(b)
 				mi.module_data = b
 				mi.module_data_size = l
