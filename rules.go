@@ -253,7 +253,3 @@ func (r *Rules) GetRules() (rv []Rule) {
 	}
 	return
 }
-
-func init() {
-	_ = C.yr_initialize()
-}
