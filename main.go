@@ -12,7 +12,14 @@ package yara
 import "C"
 
 func init() {
-	_ = C.yr_initialize()
+	if err := Initialize(); err != nil {
+		panic(err)
+	}
+}
+
+// Initialize prepares the library to be used.
+func Initialize() error {
+	return newError(C.yr_initialize())
 }
 
 // Finalize releases all the resources allocated by the library. It should be
