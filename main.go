@@ -17,6 +17,6 @@ func init() {
 
 // Finalize releases all the resources allocated by the library. It should be
 // called when the program finishes using it.
-func Finalize() {
-	C.yr_finalize()
+func Finalize() error {
+	return newError(C.yr_finalize())
 }
