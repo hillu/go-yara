@@ -199,7 +199,7 @@ func (m *Match) Data() []byte {
 
 // Length returns the length of the match.
 func (m *Match) Length() int64 {
-	return int64(m.cptr.data_length)
+	return int64(m.cptr.match_length)
 }
 
 // Offset returns the offset at which the string match occurred
