@@ -188,8 +188,9 @@ func (s *String) Matches() (matches []Match) {
 	return
 }
 
-// Data returns the blob of data associated with the string match. It could be
-// nil if YARA is configured for not returning the matching data.
+// Data returns the blob of data associated with the match. Returns nil if
+// YARA was configured for not storing the matching data by passing zero to
+// SetMaxMatchData.
 func (m *Match) Data() []byte {
 	if m.cptr.data_length == 0 {
 		return nil
