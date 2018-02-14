@@ -42,3 +42,38 @@ func TestScanner(t *testing.T) {
 	}
 	t.Logf("Matches: %+v", m)
 }
+
+func TestScannerError(t *testing.T) {
+	r := makeRules(t,
+		`rule test {
+			strings:
+				$a = "aa"
+			condition:
+				$a
+		 }`)
+
+	s, err := NewScanner(r)
+	if err != nil {
+		t.Errorf("NewScanner: %s", err)
+	}
+	_, err = s.ScanMem([]byte(strings.Repeat("a", 10000000)), 0, 0)
+	if err == nil {
+		t.Error("Expecting error")
+	}
+
+	er := s.GetLastErrorRule()
+	if er == nil {
+		t.Error("The rule causing the error should not be nil")
+	}
+	if er.Identifier() != "test" {
+		t.Error("The rule causing the error should be \"test\"")
+	}
+
+	es := s.GetLastErrorString()
+	if es == nil {
+		t.Error("The string causing the error should not be nil")
+	}
+	if es.Identifier() != "$a" {
+		t.Error("The string causing the error should be \"$a\"")
+	}
+}

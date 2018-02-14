@@ -128,3 +128,21 @@ func (s *Scanner) DefineVariable(identifier string, value interface{}) (err erro
 	keepAlive(s)
 	return
 }
+
+// GetLastErrorRule returns the rule that caused the last scanner error.
+func (s *Scanner) GetLastErrorRule() *Rule {
+	r := C.yr_scanner_last_error_rule(s.cptr)
+	if r == nil {
+		return nil
+	}
+	return &Rule{r}
+}
+
+// GetLastErrorString returns the string that caused the last scanner error.
+func (s *Scanner) GetLastErrorString() *String {
+	str := C.yr_scanner_last_error_string(s.cptr)
+	if str == nil {
+		return nil
+	}
+	return &String{str}
+}
