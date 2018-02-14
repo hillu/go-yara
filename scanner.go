@@ -19,10 +19,20 @@ import "C"
 import "C"
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"time"
 	"unsafe"
 )
+
+type scanner struct {
+	cptr *C.YR_SCANNER
+}
+
+func (s *scanner) finalize() {
+	C.yr_scanner_destroy(s.cptr)
+	runtime.SetFinalizer(s, nil)
+}
 
 // A Scanner allows scanning files, in-memory data and processes using the
 // compiled rules built with a Compiler.
@@ -36,8 +46,18 @@ type Scanner struct {
 	rules *Rules
 }
 
-type scanner struct {
-	cptr *C.YR_SCANNER
+func (s *Scanner) newError(code C.int) error {
+	err := newError(code)
+	errRule := s.GetLastErrorRule()
+	errString := s.GetLastErrorString()
+	if errRule != nil && errString != nil {
+		err = fmt.Errorf(
+			"%s caused by rule \"%s\" string \"%s\"", err, errRule.Identifier(), errString.Identifier())
+	} else if errRule != nil {
+		err = fmt.Errorf(
+			"%s caused by rule \"%s\"", err, errRule.Identifier())
+	}
+	return err
 }
 
 // NewScanner creates a scanner for scanning files, in-memory data or processes
@@ -50,11 +70,6 @@ func NewScanner(r *Rules) (*Scanner, error) {
 	s := &Scanner{scanner: &scanner{cptr: yrScanner}, rules: r}
 	runtime.SetFinalizer(s.scanner, (*scanner).finalize)
 	return s, nil
-}
-
-func (s *scanner) finalize() {
-	C.yr_scanner_destroy(s.cptr)
-	runtime.SetFinalizer(s, nil)
 }
 
 // Destroy destroys the YARA data structure representing a scanner.
@@ -91,7 +106,7 @@ func (s *Scanner) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.
 		s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(&ctxid))
 	C.yr_scanner_set_timeout(s.cptr, C.int(timeout.Seconds()))
 	C.yr_scanner_set_flags(s.cptr, C.int(flags)|C.SCAN_FLAGS_NO_TRYCATCH)
-	err = newError(C.yr_scanner_scan_mem(s.cptr, ptr, C.size_t(len(buf))))
+	err = s.newError(C.yr_scanner_scan_mem(s.cptr, ptr, C.size_t(len(buf))))
 	keepAlive(ctxid)
 	keepAlive(s)
 	return

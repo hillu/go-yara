@@ -61,6 +61,10 @@ func TestScannerError(t *testing.T) {
 		t.Error("Expecting error")
 	}
 
+	if !strings.Contains(err.Error(), "test") {
+		t.Error("Rule name expected in error message")
+	}
+
 	er := s.GetLastErrorRule()
 	if er == nil {
 		t.Error("The rule causing the error should not be nil")
