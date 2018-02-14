@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -239,4 +240,35 @@ func TestRule(t *testing.T) {
 			t.Errorf("Found unexpected rule name: %#v", r.Identifier())
 		}
 	}
+}
+
+type mycb struct{ t *testing.T }
+
+func (c mycb) RuleMatching(r *Rule) (bool, error) {
+	c.t.Logf("RuleMatching callback called: rule=%s", r.Identifier())
+	return false, nil
+}
+func (c mycb) RuleNotMatching(r *Rule) (bool, error) {
+	c.t.Logf("RuleNotMatching callback called: rule=%s", r.Identifier())
+	return false, nil
+}
+func (c mycb) ScanFinished() (bool, error) {
+	c.t.Log("ScanFinished callback called")
+	return false, nil
+}
+func (c *mycb) ImportModule(s string) ([]byte, bool, error) {
+	c.t.Logf("ImportModule callback called: module=%s", s)
+	return []byte("{}"), false, nil
+}
+func (c *mycb) ModuleImported(*Object) (bool, error) {
+	c.t.Log("ModuleImported callback called")
+	return false, nil
+}
+
+func TestImportDataCallback(t *testing.T) {
+	r := makeRules(t, `import "cuckoo" import "pe" rule t1 { condition: true } rule t2 { condition: false }`)
+	if err := r.ScanMemWithCallback([]byte(""), 0, 0, &mycb{t}); err != nil {
+		t.Error(err)
+	}
+	runtime.GC()
 }

@@ -10,12 +10,11 @@ package yara
 /*
 #include <yara.h>
 
-int stdScanCallback(int, void*, void*);
+int scanCallbackFunc(int, void*, void*);
 */
 import "C"
 import (
 	"errors"
-	"reflect"
 	"runtime"
 	"time"
 	"unsafe"
@@ -53,65 +52,6 @@ func init() {
 	_ = C.yr_initialize()
 }
 
-//export newMatch
-func newMatch(userData unsafe.Pointer, namespace, identifier *C.char) {
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	*matches = append(*matches, MatchRule{
-		Rule:      C.GoString(identifier),
-		Namespace: C.GoString(namespace),
-		Tags:      []string{},
-		Meta:      map[string]interface{}{},
-		Strings:   []MatchString{},
-	})
-}
-
-//export addMetaInt
-func addMetaInt(userData unsafe.Pointer, identifier *C.char, value C.int) {
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	i := len(*matches) - 1
-	(*matches)[i].Meta[C.GoString(identifier)] = int32(value)
-}
-
-//export addMetaString
-func addMetaString(userData unsafe.Pointer, identifier *C.char, value *C.char) {
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	i := len(*matches) - 1
-	(*matches)[i].Meta[C.GoString(identifier)] = C.GoString(value)
-}
-
-//export addMetaBool
-func addMetaBool(userData unsafe.Pointer, identifier *C.char, value C.int) {
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	i := len(*matches) - 1
-	(*matches)[i].Meta[C.GoString(identifier)] = bool(value != 0)
-}
-
-//export addTag
-func addTag(userData unsafe.Pointer, tag *C.char) {
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	i := len(*matches) - 1
-	(*matches)[i].Tags = append((*matches)[i].Tags, C.GoString(tag))
-}
-
-//export addString
-func addString(userData unsafe.Pointer, identifier *C.char, offset C.uint64_t, data unsafe.Pointer, length C.int) {
-	ms := MatchString{
-		Name:   C.GoString(identifier),
-		Offset: uint64(offset),
-		Data:   make([]byte, int(length)),
-	}
-
-	var tmpSlice []byte
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&tmpSlice))
-	hdr.Data = uintptr(data)
-	hdr.Len = int(length)
-	copy(ms.Data, tmpSlice)
-
-	matches := callbackData.Get(*(*uintptr)(userData)).(*[]MatchRule)
-	i := len(*matches) - 1
-	(*matches)[i].Strings = append((*matches)[i].Strings, ms)
-}
-
 // ScanFlags are used to tweak the behavior of Scan* functions.
 type ScanFlags int
 
@@ -125,20 +65,31 @@ const (
 	ScanFlagsProcessMemory = C.SCAN_FLAGS_PROCESS_MEMORY
 )
 
-// ScanMem scans an in-memory buffer using the ruleset.
+// ScanMem scans an in-memory buffer using the ruleset, returning
+// matches via a list of MatchRule objects.
 func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanMemWithCallback(buf, flags, timeout, &cb)
+	matches = cb
+	return
+}
+
+// ScanMemWithCallback scans an in-memory buffer using the ruleset.
+// For every event emitted by libyara, the appropriate method on the
+// ScanCallback object is called.
+func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	id := callbackData.Put(&matches)
+	id := callbackData.Put(cb)
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(id)
@@ -146,17 +97,28 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (mat
 	return
 }
 
-// ScanFile scans a file using the ruleset.
+// ScanFile scans a file using the ruleset, returning matches via a
+// list of MatchRule objects.
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanFileWithCallback(filename, flags, timeout, &cb)
+	matches = cb
+	return
+}
+
+// ScanFileWithCallback scans a file using the ruleset. For every
+// event emitted by libyara, the appropriate method on the
+// ScanCallback object is called.
+func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	id := callbackData.Put(&matches)
+	id := callbackData.Put(cb)
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(id)
@@ -164,15 +126,26 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 	return
 }
 
-// ScanProc scans a live process using the ruleset.
+// ScanProc scans a live process using the ruleset, returning matches
+// via a list of MatchRule objects.
 func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	id := callbackData.Put(&matches)
+	cb := MatchRules{}
+	err = r.ScanProcWithCallback(pid, flags, timeout, &cb)
+	matches = cb
+	return
+}
+
+// ScanProcWithCallback scans a live process using the ruleset.  For
+// every event emitted by libyara, the appropriate method on the
+// ScanCallback object is called.
+func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+	id := callbackData.Put(cb)
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(id)

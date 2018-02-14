@@ -36,7 +36,7 @@ int _yr_rules_scan_fd(
 size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);
 
-int stdScanCallback(int, void*, void*);
+int scanCallbackFunc(int, void*, void*);
 */
 import "C"
 import (
@@ -46,15 +46,26 @@ import (
 	"unsafe"
 )
 
-// ScanFileDescriptor scans a file using the ruleset.
+// ScanFileDescriptor scans a file using the ruleset, returning
+// matches via a list of MatchRule objects.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	id := callbackData.Put(&matches)
+	cb := MatchRules{}
+	err = r.ScanFileDescriptorWithCallback(fd, flags, timeout, &cb)
+	matches = cb
+	return
+}
+
+// ScanFileDescriptor scans a file using the ruleset. For every event
+// emitted by libyara, the appropriate method on the ScanCallback
+// object is called.
+func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+	id := callbackData.Put(cb)
 	defer callbackData.Delete(id)
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
 		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.stdScanCallback),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		unsafe.Pointer(&id),
 		C.int(timeout/time.Second)))
 	keepAlive(id)
