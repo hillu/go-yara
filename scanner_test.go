@@ -6,19 +6,22 @@
 
 // This file contains functionality that require libyara 3.8 or higher
 
-//+build !yara3.3,!yara3.4,!yara3.5,!yara3.6,!yara.37
+//+build !yara3.3,!yara3.4,!yara3.5,!yara3.6,!yara3.7
 
 package yara
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestScanner(t *testing.T) {
 	r := makeRulesWithVars(t,
 		`rule test {
-					strings:
-						$a = "abc" fullword
-					condition:
-						$a and int_var == 1 and bool_var
+			strings:
+				$a = "abc" fullword
+			condition:
+				$a and int_var == 1 and bool_var
 		 }`,
 		map[string]interface{}{
 			"int_var":  0,

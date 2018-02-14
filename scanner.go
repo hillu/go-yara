@@ -6,7 +6,7 @@
 
 // This file contains functionality that require libyara 3.8 or higher
 
-//+build !yara3.3,!yara3.4,!yara3.5,!yara3.6,!yara.37
+//+build !yara3.3,!yara3.4,!yara3.5,!yara3.6,!yara3.7
 
 package yara
 
