@@ -46,17 +46,44 @@ type Scanner struct {
 	rules *Rules
 }
 
-func (s *Scanner) newError(code C.int) error {
-	err := newError(code)
-	errRule := s.GetLastErrorRule()
-	errString := s.GetLastErrorString()
-	if errRule != nil && errString != nil {
-		err = fmt.Errorf(
-			"%s caused by rule \"%s\" string \"%s\"", err, errRule.Identifier(), errString.Identifier())
-	} else if errRule != nil {
-		err = fmt.Errorf(
-			"%s caused by rule \"%s\"", err, errRule.Identifier())
+// An ScanError is returning by all scan functions implemented by Scanner.
+type ScanError struct {
+	Code             int
+	Namespace        string
+	RuleIdentifier   string
+	StringIdentifier string
+}
+
+func (e ScanError) Error() (errorString string) {
+	if e.Namespace != "" && e.RuleIdentifier != "" {
+		errorString = fmt.Sprintf("%s caused by rule \"%s:%s\"",
+			errorCodeToString(e.Code), e.Namespace, e.RuleIdentifier)
+		if e.StringIdentifier != "" {
+			errorString += fmt.Sprintf(" string %s", e.StringIdentifier)
+		}
+	} else {
+		errorString = errorCodeToString(e.Code)
 	}
+	return errorString
+}
+
+func (s *Scanner) newError(code C.int) error {
+
+	if code == C.ERROR_SUCCESS {
+		return nil
+	}
+
+	err := ScanError{Code: int(code)}
+
+	if rule := s.GetLastErrorRule(); rule != nil {
+		err.RuleIdentifier = rule.Identifier()
+		err.Namespace = rule.Namespace()
+	}
+
+	if str := s.GetLastErrorString(); str != nil {
+		err.StringIdentifier = str.Identifier()
+	}
+
 	return err
 }
 

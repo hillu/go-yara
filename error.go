@@ -19,10 +19,14 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	if str, ok := errorStrings[e.Code]; ok {
+	return errorCodeToString(e.Code)
+}
+
+func errorCodeToString(errorCode int) string {
+	if str, ok := errorStrings[errorCode]; ok {
 		return str
 	}
-	return fmt.Sprintf("unknown error %d", e.Code)
+	return fmt.Sprintf("unknown error %d", errorCode)
 }
 
 func newError(code C.int) error {
