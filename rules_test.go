@@ -266,7 +266,7 @@ func (c *mycb) ModuleImported(*Object) (bool, error) {
 }
 
 func TestImportDataCallback(t *testing.T) {
-	r := makeRules(t, `import "cuckoo" import "pe" rule t1 { condition: true } rule t2 { condition: false }`)
+	r := makeRules(t, `import "tests" import "pe" rule t1 { condition: true } rule t2 { condition: false }`)
 	if err := r.ScanMemWithCallback([]byte(""), 0, 0, &mycb{t}); err != nil {
 		t.Error(err)
 	}
