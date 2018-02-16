@@ -4,7 +4,6 @@ package yara
 
 import (
 	"C"
-	"fmt"
 	"sort"
 )
 
@@ -40,7 +39,6 @@ func (r *Rules) GetMostCostlyRules(n int) []RuleCost {
 	sort.Sort(ByCostDesc(rules))
 	result := make([]RuleCost, 0)
 	for i, rule := range rules {
-		fmt.Println(rule.Identifier())
 		if i == n {
 			break
 		}
