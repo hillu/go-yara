@@ -110,11 +110,18 @@ type MatchRules []MatchRule
 // RuleMatching implements the ScanCallbackMatch interface for
 // MatchRules.
 func (mr *MatchRules) RuleMatching(r *Rule) (abort bool, err error) {
+	metas := r.Metas()
+	// convert int to int32 for code that relies on previous behavior
+	for s := range metas {
+		if i, ok := metas[s].(int); ok {
+			metas[s] = int32(i)
+		}
+	}
 	*mr = append(*mr, MatchRule{
 		Rule:      r.Identifier(),
 		Namespace: r.Namespace(),
 		Tags:      r.Tags(),
-		Meta:      r.Metas(),
+		Meta:      metas,
 		Strings:   r.getMatchStrings(),
 	})
 	return
