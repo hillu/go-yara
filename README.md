@@ -106,7 +106,7 @@ environment variables, e.g.:
 ```
 export CGO_CFLAGS="-I${YARA_SRC}/libyara/include"
 export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
-go install github.com/hillu/go-yara -tags no_pkg_config
+go install -tags no_pkg_config github.com/hillu/go-yara
 ```
 
 ## License
