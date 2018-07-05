@@ -19,8 +19,8 @@ addons:
     - make
     - gcc
 before_install:
-  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/master.tar.gz | tar -C ${TRAVIS_BUILD_DIR} -xzf -
-  - ( cd ${TRAVIS_BUILD_DIR}/yara-master && ./bootstrap.sh && ./configure --enable-profiling && make )
-  - export CGO_CFLAGS=-I${TRAVIS_BUILD_DIR}/yara-master/libyara/include
-  - export CGO_LDFLAGS=-L${TRAVIS_BUILD_DIR}/yara-master/libyara/.libs
-  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/yara-master/libyara/.libs
+  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/ngram_blacklist.tar.gz | tar -C ${TRAVIS_BUILD_DIR} -xzf -
+  - ( cd ${TRAVIS_BUILD_DIR}/yara-ngram_blacklist && ./bootstrap.sh && ./configure --enable-profiling && make )
+  - export CGO_CFLAGS=-I${TRAVIS_BUILD_DIR}/yara-ngram_blacklist/libyara/include
+  - export CGO_LDFLAGS=-L${TRAVIS_BUILD_DIR}/yara-ngram_blacklist/libyara/.libs
+  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/yara-ngram_blacklist/libyara/.libs
