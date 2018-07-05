@@ -17,8 +17,9 @@ import "C"
 
 // LoadAtomPrevalenceTable loads an atom prevalence table from a file.
 func (c *Compiler) LoadAtomPrevalenceTable(path string) error {
-	return newError(C.yr_compiler_load_atom_prevalence_table(
+	err := newError(C.yr_compiler_load_atom_prevalence_table(
 		c.compiler.cptr,
 		C.CString(path)))
 	keepAlive(c)
+	return err
 }
