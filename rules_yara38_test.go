@@ -28,7 +28,7 @@ func TestSortByCost(t *testing.T) {
 	rules := r.GetRules()
 	sort.Sort(ByCostDesc(rules))
 	if rules[0].Identifier() != "slow" {
-		t.Error("Slowest rule should be the first one")
+		t.Error("Slowest rule should be the first one (was YARA built with ./configure --enable-profiling?)")
 	}
 }
 
