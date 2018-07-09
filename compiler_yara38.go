@@ -15,11 +15,13 @@ package yara
 */
 import "C"
 
-// LoadAtomPrevalenceTable loads an atom prevalence table from a file.
-func (c *Compiler) LoadAtomPrevalenceTable(path string) error {
-	err := newError(C.yr_compiler_load_atom_prevalence_table(
+// LoadAtomQualityTable loads an atom quality table from a file.
+func (c *Compiler) LoadAtomQualityTable(path string, qualityWarningThreshold uint8) error {
+	err := newError(C.yr_compiler_load_atom_quality_table(
 		c.compiler.cptr,
-		C.CString(path)))
+		C.CString(path),
+		C.uint8_t(qualityWarningThreshold)),
+	)
 	keepAlive(c)
 	return err
 }
