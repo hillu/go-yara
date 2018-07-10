@@ -6,6 +6,12 @@
 
 package yara
 
+import (
+	"github.com/hillu/go-yara/internal/callbackdata"
+)
+
+var callbackData = callbackdata.MakePool(256)
+
 func toint64(number interface{}) int64 {
 	switch number.(type) {
 	case int:

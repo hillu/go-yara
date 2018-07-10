@@ -40,14 +40,14 @@ type CompilerIncludeFunc func(name, filename, namespace string) []byte
 // See yr_compiler_set_include_callbacks.
 func (c *Compiler) DisableIncludes() {
 	C.yr_compiler_set_include_callback(c.compiler.cptr, nil, nil, nil)
+	c.setCallbackData(nil)
 	keepAlive(c)
 	return
 }
 
 //export includeCallback
 func includeCallback(name, filename, namespace *C.char, userData unsafe.Pointer) *C.char {
-	id := *((*uintptr)(userData))
-	callbackFunc := callbackData.Get(id).(CompilerIncludeFunc)
+	callbackFunc := callbackData.Get(userData).(CompilerIncludeFunc)
 	if buf := callbackFunc(
 		C.GoString(name), C.GoString(filename), C.GoString(namespace),
 	); buf != nil {
@@ -81,13 +81,13 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 		return
 	}
 	id := callbackData.Put(cb)
+	c.setCallbackData(id)
 	C.yr_compiler_set_include_callback(
 		c.compiler.cptr,
 		C.YR_COMPILER_INCLUDE_CALLBACK_FUNC(C.includeCallback),
 		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
-		unsafe.Pointer(&id),
+		id,
 	)
-	keepAlive(id)
 	keepAlive(c)
 	return
 }

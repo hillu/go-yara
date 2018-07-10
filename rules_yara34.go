@@ -43,7 +43,6 @@ import (
 	"io"
 	"runtime"
 	"time"
-	"unsafe"
 )
 
 // ScanFileDescriptor scans a file using the ruleset, returning
@@ -66,9 +65,8 @@ func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, time
 		C.int(fd),
 		C.int(flags),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(&id),
+		id,
 		C.int(timeout/time.Second)))
-	keepAlive(id)
 	keepAlive(r)
 	return
 }
@@ -83,10 +81,9 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 		// The complaint from go vet about possible misuse of
 		// unsafe.Pointer is wrong: user_data will be interpreted as
 		// an uintptr on the other side of the callback
-		user_data: unsafe.Pointer(id),
+		user_data: id,
 	}
 	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
-	keepAlive(id)
 	keepAlive(r)
 	return
 }
@@ -101,13 +98,12 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 		read: C.YR_STREAM_READ_FUNC(C.streamRead),
 		// The complaint from go vet about possible misuse of
 		// unsafe.Pointer is wrong, see above.
-		user_data: unsafe.Pointer(id),
+		user_data: id,
 	}
 	if err := newError(C.yr_rules_load_stream(&stream,
 		&(r.rules.cptr))); err != nil {
 		return nil, err
 	}
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
-	keepAlive(id)
 	return r, nil
 }

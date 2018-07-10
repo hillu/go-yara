@@ -53,8 +53,7 @@ type ScanCallbackModuleImportFinished interface {
 
 //export scanCallbackFunc
 func scanCallbackFunc(message C.int, messageData, userData unsafe.Pointer) C.int {
-	id := *(*uintptr)(userData)
-	cb := callbackData.Get(id)
+	cb := callbackData.Get(userData)
 	var abort bool
 	var err error
 	switch message {
