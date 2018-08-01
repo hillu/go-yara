@@ -3,6 +3,11 @@ package yara
 /*
 #include <stdlib.h>
 #include <yara.h>
+
+// Constant not defined until YARA 3.5
+#ifndef CALLBACK_MSG_MODULE_IMPORTED
+# define CALLBACK_MSG_MODULE_IMPORTED 5
+#endif
 */
 import "C"
 import (
