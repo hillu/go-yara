@@ -89,7 +89,6 @@ static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
 
 */
 import "C"
-import "unsafe"
 
 // Rule represents a single rule as part of a ruleset
 type Rule struct{ cptr *C.YR_RULE }
@@ -186,11 +185,6 @@ func (s *String) Matches() (matches []Match) {
 		matches = append(matches, Match{ptr})
 	}
 	return
-}
-
-// Data returns the blob of data associated with the string match
-func (m *Match) Data() []byte {
-	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
 }
 
 // Offset returns the offset at which the string match occurred
