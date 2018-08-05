@@ -93,7 +93,8 @@ features that are not present in older versions can be excluded by
 passing a build tag such as `yara3.3`, `yara3.4`, `yara3.5`. If you
 want to build with a git snapshot of YARA, you may use a build tag
 corresponding to the upcoming stable YARA version, currently
-`yara3.8`.
+`yara3.8`. You also need to pass the tag when you build your own
+project.
 
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch.
