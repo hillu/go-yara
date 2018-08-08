@@ -12,7 +12,14 @@ package yara
 import "C"
 
 func init() {
-	_ = C.yr_initialize()
+	if err := initialize(); err != nil {
+		panic(err)
+	}
+}
+
+// Prepares the library to be used.
+func initialize() error {
+	return newError(C.yr_initialize())
 }
 
 // Finalize releases all the resources allocated by the library. It should be
@@ -22,6 +29,6 @@ func init() {
 // don't. The recommended practice is calling it as a defered function in your
 // program's main:
 //  defer yara.Finalize()
-func Finalize() {
-	C.yr_finalize()
+func Finalize() error {
+	return newError(C.yr_finalize())
 }
