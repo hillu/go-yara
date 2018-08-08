@@ -20,7 +20,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
-	reader := callbackData.Get(uintptr(userData)).(io.Reader)
+	reader := callbackData.Get(userData).(io.Reader)
 	buf := make([]byte, 0)
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hdr.Data = uintptr(ptr)
@@ -35,6 +35,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	return nmemb
 }
 
+// writeFull does its best to write all of buf to w. See io.ReadFull.
 func writeFull(w io.Writer, buf []byte) (n int, err error) {
 	var i int
 	for n < len(buf) {
@@ -52,7 +53,7 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
-	writer := callbackData.Get(uintptr(userData)).(io.Writer)
+	writer := callbackData.Get(userData).(io.Writer)
 	buf := make([]byte, 0)
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hdr.Data = uintptr(ptr)

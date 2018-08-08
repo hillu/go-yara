@@ -39,3 +39,26 @@ func TestRulesFinalizer(t *testing.T) {
 	r.Destroy()
 	t.Log("Did not crash due to yr_*_destroy() being called twice. Yay.")
 }
+
+// Adapted from test in https://github.com/hillu/go-yara/issues/22
+func TestCompilerCrash(t *testing.T) {
+	done := make(chan bool)
+	go func(t *testing.T, done <-chan bool) {
+		for i := 0; ; i++ {
+			select {
+			case <-done:
+				return
+			default:
+				t.Logf("GC %d", i)
+				runtime.GC()
+			}
+		}
+	}(t, done)
+	for i := 0; i < 10000; i++ {
+		t.Logf("compile %d", i)
+		makeRules(t, "rule test { strings: $a = /a.*a/ condition: $a }")
+	}
+	close(done)
+	t.Log("Callback data intact after compiler.AddString() invocation. Yay.")
+	return
+}

@@ -1,9 +1,12 @@
+![Logo](/goyara-logo.png)
+
 # go-yara
 
 [![GoDoc](https://godoc.org/github.com/hillu/go-yara?status.svg)](https://godoc.org/github.com/hillu/go-yara)
 [![Travis](https://travis-ci.org/hillu/go-yara.svg?branch=master)](https://travis-ci.org/hillu/go-yara)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hillu/go-yara)](https://goreportcard.com/report/github.com/hillu/go-yara)
 
-Go bindings for [YARA](http://plusvic.github.io/yara/), staying as
+Go bindings for [YARA](https://virustotal.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
@@ -90,7 +93,8 @@ features that are not present in older versions can be excluded by
 passing a build tag such as `yara3.3`, `yara3.4`, `yara3.5`. If you
 want to build with a git snapshot of YARA, you may use a build tag
 corresponding to the upcoming stable YARA version, currently
-`yara3.8`.
+`yara3.8`. You also need to pass the tag when you build your own
+project.
 
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch.
@@ -103,7 +107,7 @@ environment variables, e.g.:
 ```
 export CGO_CFLAGS="-I${YARA_SRC}/libyara/include"
 export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
-go install github.com/hillu/go-yara -tags no_pkg_config
+go install -tags no_pkg_config github.com/hillu/go-yara
 ```
 
 ## License
