@@ -48,10 +48,6 @@ type MatchString struct {
 	Data   []byte
 }
 
-func init() {
-	_ = C.yr_initialize()
-}
-
 // ScanFlags are used to tweak the behavior of Scan* functions.
 type ScanFlags int
 
