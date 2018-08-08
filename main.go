@@ -11,7 +11,16 @@ package yara
 */
 import "C"
 
-func init() { C.yr_initialize() }
+func init() {
+	if err := initialize(); err != nil {
+		panic(err)
+	}
+}
+
+// Prepares the library to be used.
+func initialize() error {
+	return newError(C.yr_initialize())
+}
 
 // Finalize releases all the resources allocated by the YARA library.
 // It should be called by the program when it no longer needs YARA,
@@ -23,4 +32,6 @@ func init() { C.yr_initialize() }
 // A good practice is calling Finalize as a deferred function in the
 // program's main function:
 //     defer yara.Finalize()
-func Finalize() { C.yr_finalize() }
+func Finalize() error {
+	return newError(C.yr_finalize())
+}
