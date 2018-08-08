@@ -7,7 +7,7 @@
 package yara
 
 import (
-	"github.com/VirusTotal/go-yara/internal/callbackdata"
+	"github.com/hillu/go-yara/internal/callbackdata"
 )
 
 var callbackData = callbackdata.MakePool(256)
