@@ -4,14 +4,14 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-package callbackdata
+package yara
 
 import (
 	"testing"
 )
 
 func TestBasic(t *testing.T) {
-	pool := MakePool(32)
+	pool := makecbPool(32)
 	p1 := pool.Put("asdf")
 	p2 := pool.Put("ghjk")
 	s1, ok := pool.Get(p1).(string)

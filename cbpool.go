@@ -4,7 +4,7 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-package callbackdata
+package yara
 
 import (
 	"reflect"
@@ -16,33 +16,33 @@ import (
 // #include <stdlib.h>
 import "C"
 
-// Pool implements a key/value store for data that is safe to pass as
-// callback data through CGO functions.
+// cbPoolPool implements a key/value store for data that is safe
+// to pass as callback data through CGO functions.
 //
 // The keys are pointers which do not directly reference the stored
 // values, therefore any "Go pointer to Go pointer" errors are avoided.
-type Pool struct {
+type cbPool struct {
 	indices []int
 	objects []interface{}
 	m       sync.RWMutex
 }
 
 // MakePool creates a Pool that can hold n elements.
-func MakePool(n int) *Pool {
-	p := &Pool{
+func makecbPool(n int) *cbPool {
+	p := &cbPool{
 		indices: make([]int, 0),
 		objects: make([]interface{}, n),
 	}
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&p.indices))
 	hdr.Data = uintptr(C.calloc(C.size_t(n), C.size_t(unsafe.Sizeof(int(0)))))
 	hdr.Len = n
-	runtime.SetFinalizer(p, (*Pool).Finalize)
+	runtime.SetFinalizer(p, (*cbPool).Finalize)
 	return p
 }
 
-// Put adds an element to the Pool, returning a stable pointer
+// Put adds an element to the cbPool, returning a stable pointer
 // suitable for passing through CGO. It panics if the pool is full.
-func (p *Pool) Put(obj interface{}) unsafe.Pointer {
+func (p *cbPool) Put(obj interface{}) unsafe.Pointer {
 	p.m.Lock()
 	defer p.m.Unlock()
 	for id, val := range p.indices {
@@ -53,20 +53,20 @@ func (p *Pool) Put(obj interface{}) unsafe.Pointer {
 		p.objects[id] = obj
 		return unsafe.Pointer(&p.indices[id])
 	}
-	panic("Pool storage exhausted")
+	panic("cbPool storage exhausted")
 }
 
-func (p *Pool) checkPointer(ptr unsafe.Pointer) {
+func (p *cbPool) checkPointer(ptr unsafe.Pointer) {
 	if uintptr(ptr) < uintptr(unsafe.Pointer(&p.indices[0])) ||
 		uintptr(unsafe.Pointer(&p.indices[len(p.indices)-1])) < uintptr(ptr) {
 		panic("Attempt to access pool using invalid pointer")
 	}
 }
 
-// Put accesses an element stored in the Pool, using a pointer
+// Put accesses an element stored in the cbPool, using a pointer
 // previously returned by Put. It panics if the pointer is invalid or
 // if it references an empty slot.
-func (p *Pool) Get(ptr unsafe.Pointer) interface{} {
+func (p *cbPool) Get(ptr unsafe.Pointer) interface{} {
 	p.m.RLock()
 	defer p.m.RUnlock()
 	p.checkPointer(ptr)
@@ -77,10 +77,10 @@ func (p *Pool) Get(ptr unsafe.Pointer) interface{} {
 	return p.objects[id]
 }
 
-// Delete removes an element from the Pool, using a pointer previously
+// Delete removes an element from the cbPool, using a pointer previously
 // returned by Put. It panics if the pointer is invalid or if it
 // references an empty slot.
-func (p *Pool) Delete(ptr unsafe.Pointer) {
+func (p *cbPool) Delete(ptr unsafe.Pointer) {
 	p.m.Lock()
 	defer p.m.Unlock()
 	p.checkPointer(ptr)
@@ -93,7 +93,7 @@ func (p *Pool) Delete(ptr unsafe.Pointer) {
 	return
 }
 
-func (p *Pool) Finalize() {
+func (p *cbPool) Finalize() {
 	p.m.Lock()
 	defer p.m.Unlock()
 	if p.indices != nil {
