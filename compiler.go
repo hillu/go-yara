@@ -101,7 +101,13 @@ func (c *Compiler) Destroy() {
 
 // AddString compiles rules from a string. Rules are added to the
 // specified namespace.
+//
+// If this function returns an error, the Compiler object will become
+// unusable.
 func (c *Compiler) AddString(rules string, namespace string) (err error) {
+	if c.cptr.errors != 0 {
+		return errors.New("Compiler cannot be used after parse error")
+	}
 	var ns *C.char
 	if namespace != "" {
 		ns = C.CString(namespace)
@@ -157,6 +163,9 @@ func (c *Compiler) DefineVariable(identifier string, value interface{}) (err err
 
 // GetRules returns the compiled ruleset.
 func (c *Compiler) GetRules() (*Rules, error) {
+	if c.cptr.errors != 0 {
+		return nil, errors.New("Compiler cannot be used after parse error")
+	}
 	var yrRules *C.YR_RULES
 	if err := newError(C.yr_compiler_get_rules(c.cptr, &yrRules)); err != nil {
 		return nil, err

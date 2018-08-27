@@ -31,7 +31,13 @@ import (
 
 // AddFile compiles rules from a file. Rules are added to the
 // specified namespace.
+//
+// If this function returns an error, the Compiler object will become
+// unusable.
 func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
+	if c.cptr.errors != 0 {
+		return errors.New("Compiler cannot be used after parse error")
+	}
 	fd := C.dup(C.int(file.Fd()))
 	fh, err := C.fdopen(fd, C.CString("r"))
 	if err != nil {
