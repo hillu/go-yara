@@ -96,14 +96,14 @@ func assertFalseRules(t *testing.T, rules []string, data []byte) {
 }
 
 func TestLoad(t *testing.T) {
-	r, err := LoadRules("testrules.yac")
+	r, err := LoadRules(compiledTestRulesPath)
 	if r == nil || err != nil {
 		t.Fatalf("LoadRules: %s", err)
 	}
 }
 
 func TestReader(t *testing.T) {
-	rd, err := os.Open("testrules.yac")
+	rd, err := os.Open(compiledTestRulesPath)
 	if err != nil {
 		t.Fatalf("os.Open: %s", err)
 	}
@@ -119,7 +119,7 @@ func TestReader(t *testing.T) {
 }
 
 func TestWriter(t *testing.T) {
-	rd, err := os.Open("testrules.yac")
+	rd, err := os.Open(compiledTestRulesPath)
 	if err != nil {
 		t.Fatalf("os.Open: %s", err)
 	}
