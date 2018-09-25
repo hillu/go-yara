@@ -1,3 +1,34 @@
+# Repackaged go-yara
+
+This package is a repackaged version of
+https://github.com/hillu/go-yara which focuses on making it easier to
+use.
+
+Instead of requiring users to install the yara library on the build
+system, this package already includes the library within it.  This
+makes it very easy to use - simply add the dependency and build
+normally.
+
+The resulting binary will also be statically built and have no
+external shared object dependencies. No need to mess with build flags:
+
+```
+~/go/src/github.com/Velocidex/go-yara$ go build _examples/simple-yara/simple-yara.go
+~/go/src/github.com/Velocidex/go-yara$ ldd simple-yara
+        linux-vdso.so.1 (0x00007ffd4085a000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fcd9867c000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fcd9828b000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fcd9889b000)
+```
+
+To build for windows, there is no need to build the yara library
+first, just build your project with the usual steps:
+```
+~/go/src/github.com/Velocidex/go-yara$ GOOS=windows GOARCH=amd64 \
+      CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
+      go build _examples/simple-yara/simple-yara.go
+```
+
 ![Logo](/goyara-logo.png)
 
 # go-yara
@@ -64,7 +95,7 @@ $ cd ${YARA_SRC} \
   && ./bootstrap.sh \
   && ./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/i686-w64-mingw32 \
   && make -C ${YARA_SRC} \
-  && make -C ${YARA_SRC} install 
+  && make -C ${YARA_SRC} install
 $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
   CC=i686-w64-mingw32-gcc \
   PKG_CONFIG_PATH=${YARA_SRC}/i686-w64-mingw32/lib/pkgconfig \
@@ -78,7 +109,7 @@ $ cd ${YARA_SRC} \
   && ./bootstrap.sh \
   && ./configure --host=x86_64-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/x86_64-w64-mingw32 \
   && make -C ${YARA_SRC} \
-  && make -C ${YARA_SRC} install 
+  && make -C ${YARA_SRC} install
 $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
   CC=x86_64-w64-mingw32-gcc \
   PKG_CONFIG_PATH=${YARA_SRC}/x86_64-w64-mingw32/lib/pkgconfig \
