@@ -1,0 +1,99 @@
+diff --git a/libyara/modules/math.c b/libyara/modules/math.c
+index 759112e..eca8d35 100644
+--- a/libyara/modules/math.c
++++ b/libyara/modules/math.c
+@@ -39,13 +39,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ // log2 is not defined by math.h in VC++
+ 
+-#ifdef _MSC_VER
+-double log2(double n)
++ // A fast approximate log2 function:
++ // https://github.com/etheory/fastapprox/blob/master/fastapprox/src/fastlog.h
++ // Having it here removes the need to link to the math library and
++ // reduces our depenencies while being good enough for entropy
++ // detection.
++double log2 (double x)
+ {
+-  return log(n) / log(2.0);
++    union { float f; uint32_t i; } vx = { x };
++    union { uint32_t i; float f; } mx = { (vx.i & 0x007FFFFF) | 0x3f000000 };
++    float y = vx.i;
++    y *= 1.1920928955078125e-7f;
++
++    return y - 124.22551499f
++        - 1.498030302f * mx.f
++        - 1.72587999f / (0.3520887068f + mx.f);
+ }
+-#endif
+-
+ 
+ define_function(string_entropy)
+ {
+diff --git a/libyara/modules/pe.c b/libyara/modules/pe.c
+index 0c447c6..b263ae8 100644
+--- a/libyara/modules/pe.c
++++ b/libyara/modules/pe.c
+@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #include <ctype.h>
+ #include <time.h>
+ 
+-#include "../crypto.h"
++#include "crypto.h"
+ #if defined(HAVE_LIBCRYPTO)
+ #include <openssl/safestack.h>
+ #include <openssl/asn1.h>
+diff --git a/libyara/proc/linux.c b/libyara/proc/linux.c
+index a719ad2..4e398f6 100644
+--- a/libyara/proc/linux.c
++++ b/libyara/proc/linux.c
+@@ -27,7 +27,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#if defined(USE_LINUX_PROC)
+ 
+ #include <fcntl.h>
+ #include <inttypes.h>
+@@ -214,5 +213,3 @@ YR_API YR_MEMORY_BLOCK* yr_process_get_first_memory_block(
+ 
+   return yr_process_get_next_memory_block(iterator);
+ }
+-
+-#endif
+diff --git a/libyara/proc/mach.c b/libyara/proc/mach.c
+index 8ab6c52..be86abd 100644
+--- a/libyara/proc/mach.c
++++ b/libyara/proc/mach.c
+@@ -27,7 +27,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#if defined(USE_MACH_PROC)
+ 
+ #include <mach/mach.h>
+ #include <mach/mach_vm.h>
+@@ -168,5 +167,3 @@ YR_API YR_MEMORY_BLOCK* yr_process_get_first_memory_block(
+ 
+   return yr_process_get_next_memory_block(iterator);
+ }
+-
+-#endif
+diff --git a/libyara/proc/windows.c b/libyara/proc/windows.c
+index c39521d..ceabf0e 100644
+--- a/libyara/proc/windows.c
++++ b/libyara/proc/windows.c
+@@ -27,7 +27,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#if defined(USE_WINDOWS_PROC)
+ 
+ #include <windows.h>
+ 
+@@ -187,5 +186,3 @@ YR_API YR_MEMORY_BLOCK* yr_process_get_first_memory_block(
+ 
+   return yr_process_get_next_memory_block(iterator);
+ }
+-
+-#endif
