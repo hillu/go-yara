@@ -242,7 +242,9 @@ func TestRule(t *testing.T) {
 	}
 }
 
-type mycb struct{ t *testing.T }
+type mycb struct {
+	t *testing.T
+}
 
 func (c mycb) RuleMatching(r *Rule) (bool, error) {
 	c.t.Logf("RuleMatching callback called: rule=%s", r.Identifier())
@@ -265,10 +267,32 @@ func (c *mycb) ModuleImported(*Object) (bool, error) {
 	return false, nil
 }
 
+type mycbWrapped struct {
+	t           *testing.T
+	module_data *ModuleData
+}
+
+func (c *mycbWrapped) ImportModuleWrapped(s string) (*ModuleData, bool, error) {
+	c.t.Logf("ImportModuleWrapped callback called: module=%s", s)
+	return c.module_data, false, nil
+}
+
 func TestImportDataCallback(t *testing.T) {
 	r := makeRules(t, `import "tests" import "pe" rule t1 { condition: true } rule t2 { condition: false }`)
+
 	if err := r.ScanMemWithCallback([]byte(""), 0, 0, &mycb{t}); err != nil {
 		t.Error(err)
 	}
+
+	cb := mycbWrapped{
+		t:           t,
+		module_data: NewModuleData([]byte("{}")),
+	}
+	defer cb.module_data.Destroy()
+
+	if err := r.ScanMemWithCallback([]byte(""), 0, 0, &cb); err != nil {
+		t.Error(err)
+	}
+
 	runtime.GC()
 }

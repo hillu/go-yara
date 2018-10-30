@@ -11,7 +11,6 @@ package yara
 */
 import "C"
 import (
-	"reflect"
 	"unsafe"
 )
 
@@ -44,8 +43,22 @@ type ScanCallbackFinished interface {
 // ScanCallbackModuleImport is used to provide data to a YARA module.
 // The ImportModule method corresponds to YARA's
 // CALLBACK_MSG_IMPORT_MODULE message.
+//
+// Deprecated: this variant leaks memory in form of the C copy of the returned module data []byte slice.
+// See ScanCallbackModuleImportWrapped for the correct way to handle this callback.
 type ScanCallbackModuleImport interface {
 	ImportModule(string) ([]byte, bool, error)
+}
+
+// ScanCallbackModuleImportWrapped is used to provide data to a YARA module, same as ScanCallbackModuleImport
+// The difference between the two is that the Wrapped variant returns a Wrapper over the C-allocated array,
+// which you should create before scanning and Destroy() after you're done with scanning using that particular
+// instance of ScanCallbackModuleImportWrapped.
+//
+// The ImportModuleWrapped method corresponds to YARA's
+// CALLBACK_MSG_IMPORT_MODULE message.
+type ScanCallbackModuleImportWrapped interface {
+	ImportModuleWrapped(module_name string) (data *ModuleData, abort bool, err error)
 }
 
 // ScanCallbackModuleImportFinished can be used to free resources that
@@ -77,19 +90,24 @@ func scanCallbackFunc(message C.int, messageData, userData unsafe.Pointer) C.int
 			abort, err = c.ScanFinished()
 		}
 	case C.CALLBACK_MSG_IMPORT_MODULE:
-		if c, ok := cb.(ScanCallbackModuleImport); ok {
+		if c, ok := cb.(ScanCallbackModuleImportWrapped); ok {
+			mi := (*C.YR_MODULE_IMPORT)(messageData)
+			var data *ModuleData
+			if data, abort, err = c.ImportModuleWrapped(C.GoString(mi.module_name)); data == nil || data.size == 0 {
+				break
+			}
+
+			mi.module_data = data.data
+			mi.module_data_size = C.size_t(data.size)
+		} else if c, ok := cb.(ScanCallbackModuleImport); ok {
 			mi := (*C.YR_MODULE_IMPORT)(messageData)
 			var buf []byte
 			if buf, abort, err = c.ImportModule(C.GoString(mi.module_name)); len(buf) == 0 {
 				break
 			}
-			// FIXME: Memory leak: When/how should this buffer be free()d?
-			cbuf := C.calloc(1, C.size_t(len(buf)))
-			outbuf := make([]byte, 0)
-			hdr := (*reflect.SliceHeader)(unsafe.Pointer(&outbuf))
-			hdr.Data, hdr.Len = uintptr(cbuf), len(buf)
-			copy(outbuf, buf)
-			mi.module_data, mi.module_data_size = unsafe.Pointer(&outbuf[0]), C.size_t(len(outbuf))
+
+			outbuf := C.CBytes(buf)
+			mi.module_data, mi.module_data_size = outbuf, C.size_t(len(buf))
 		}
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
 		if c, ok := cb.(ScanCallbackModuleImportFinished); ok {
@@ -129,4 +147,33 @@ func (mr *MatchRules) RuleMatching(r *Rule) (abort bool, err error) {
 		Strings:   r.getMatchStrings(),
 	})
 	return
+}
+
+// ModuleData is a wrapper around byte array returned returned from ScanCallbackModuleImportWrapped
+// Its purpose is to free memory allocated by the array in C code. You have to call Destroy() manually.
+type ModuleData struct {
+	data unsafe.Pointer
+	size int
+}
+
+// Returns new ModuleData with your data
+func NewModuleData(data []byte) *ModuleData {
+	res := &ModuleData{
+		data: C.CBytes(data),
+		size: len(data),
+	}
+	// If there is no reference to ModuleData, the finalizer could run while the scanner is still scanning,
+	// crashing the program. Better to leak than crash.
+	// runtime.SetFinalizer(res, (*ModuleData).Destroy)
+	return res
+}
+
+// Call to free memory associated with this module data. You have to call this method manually,
+// otherwise the memory will be leaked.
+func (d *ModuleData) Destroy() {
+	if d.data != nil {
+		C.free(d.data)
+		d.data = nil
+		d.size = 0
+	}
 }
