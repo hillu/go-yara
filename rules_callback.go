@@ -97,8 +97,7 @@ func scanCallbackFunc(message C.int, messageData, userData unsafe.Pointer) C.int
 				break
 			}
 
-			mi.module_data = data.data
-			mi.module_data_size = C.size_t(data.size)
+			mi.module_data, mi.module_data_size = data.data, data.size
 		} else if c, ok := cb.(ScanCallbackModuleImport); ok {
 			mi := (*C.YR_MODULE_IMPORT)(messageData)
 			var buf []byte
@@ -106,8 +105,8 @@ func scanCallbackFunc(message C.int, messageData, userData unsafe.Pointer) C.int
 				break
 			}
 
-			outbuf := C.CBytes(buf)
-			mi.module_data, mi.module_data_size = outbuf, C.size_t(len(buf))
+			// Memory leak, fixed with ScanCallbackModuleImportWrapped
+			mi.module_data, mi.module_data_size = cBytes(buf)
 		}
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
 		if c, ok := cb.(ScanCallbackModuleImportFinished); ok {
@@ -153,15 +152,13 @@ func (mr *MatchRules) RuleMatching(r *Rule) (abort bool, err error) {
 // Its purpose is to free memory allocated by the array in C code. You have to call Destroy() manually.
 type ModuleData struct {
 	data unsafe.Pointer
-	size int
+	size C.size_t
 }
 
 // Returns new ModuleData with your data
 func NewModuleData(data []byte) *ModuleData {
-	res := &ModuleData{
-		data: C.CBytes(data),
-		size: len(data),
-	}
+	res := &ModuleData{}
+	res.data, res.size = cBytes(data)
 	// If there is no reference to ModuleData, the finalizer could run while the scanner is still scanning,
 	// crashing the program. Better to leak than crash.
 	// runtime.SetFinalizer(res, (*ModuleData).Destroy)
