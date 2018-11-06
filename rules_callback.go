@@ -56,43 +56,65 @@ type ScanCallbackModuleImportFinished interface {
 	ModuleImported(*Object) (bool, error)
 }
 
+// scanCallbackContainer is used by (*Rules).Scan* methods and
+// scanCallbackFunc(). It stores the public callback interface and a
+// list of C pointers that need to be freed later.
+type scanCallbackContainer struct {
+	ScanCallback
+	cdata []unsafe.Pointer
+}
+
+// addCPointer adds a C pointer that can later be freed using free().
+func (c *scanCallbackContainer) addCPointer(p unsafe.Pointer) { c.cdata = append(c.cdata, p) }
+
+// destroy frees stored C pointers
+func (c *scanCallbackContainer) destroy() {
+	for _, p := range c.cdata {
+		C.free(p)
+	}
+	c.cdata = nil
+}
+
 //export scanCallbackFunc
 func scanCallbackFunc(message C.int, messageData, userData unsafe.Pointer) C.int {
-	cb := callbackData.Get(userData)
+	cbc, ok := callbackData.Get(userData).(*scanCallbackContainer)
+	if !ok {
+		return C.CALLBACK_ERROR
+	}
 	var abort bool
 	var err error
 	switch message {
 	case C.CALLBACK_MSG_RULE_MATCHING:
-		if c, ok := cb.(ScanCallbackMatch); ok {
+		if c, ok := cbc.ScanCallback.(ScanCallbackMatch); ok {
 			r := (*C.YR_RULE)(messageData)
 			abort, err = c.RuleMatching(&Rule{r})
 		}
 	case C.CALLBACK_MSG_RULE_NOT_MATCHING:
-		if c, ok := cb.(ScanCallbackNoMatch); ok {
+		if c, ok := cbc.ScanCallback.(ScanCallbackNoMatch); ok {
 			r := (*C.YR_RULE)(messageData)
 			abort, err = c.RuleNotMatching(&Rule{r})
 		}
 	case C.CALLBACK_MSG_SCAN_FINISHED:
-		if c, ok := cb.(ScanCallbackFinished); ok {
+		if c, ok := cbc.ScanCallback.(ScanCallbackFinished); ok {
 			abort, err = c.ScanFinished()
 		}
 	case C.CALLBACK_MSG_IMPORT_MODULE:
-		if c, ok := cb.(ScanCallbackModuleImport); ok {
+		if c, ok := cbc.ScanCallback.(ScanCallbackModuleImport); ok {
 			mi := (*C.YR_MODULE_IMPORT)(messageData)
 			var buf []byte
 			if buf, abort, err = c.ImportModule(C.GoString(mi.module_name)); len(buf) == 0 {
 				break
 			}
-			// FIXME: Memory leak: When/how should this buffer be free()d?
 			cbuf := C.calloc(1, C.size_t(len(buf)))
 			outbuf := make([]byte, 0)
 			hdr := (*reflect.SliceHeader)(unsafe.Pointer(&outbuf))
 			hdr.Data, hdr.Len = uintptr(cbuf), len(buf)
 			copy(outbuf, buf)
 			mi.module_data, mi.module_data_size = unsafe.Pointer(&outbuf[0]), C.size_t(len(outbuf))
+			cbc.addCPointer(cbuf)
 		}
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
-		if c, ok := cb.(ScanCallbackModuleImportFinished); ok {
+		if c, ok := cbc.ScanCallback.(ScanCallbackModuleImportFinished); ok {
 			obj := (*C.YR_OBJECT)(messageData)
 			abort, err = c.ModuleImported(&Object{obj})
 		}
