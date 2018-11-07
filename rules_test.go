@@ -242,33 +242,79 @@ func TestRule(t *testing.T) {
 	}
 }
 
-type mycb struct{ t *testing.T }
+type testCallback struct {
+	t          *testing.T
+	finished   bool
+	modules    map[string]struct{}
+	matched    map[string]struct{}
+	notMatched map[string]struct{}
+}
 
-func (c mycb) RuleMatching(r *Rule) (bool, error) {
+func newTestCallback(t *testing.T) *testCallback {
+	return &testCallback{
+		t, false,
+		make(map[string]struct{}),
+		make(map[string]struct{}),
+		make(map[string]struct{}),
+	}
+}
+
+func (c *testCallback) RuleMatching(r *Rule) (bool, error) {
 	c.t.Logf("RuleMatching callback called: rule=%s", r.Identifier())
+	c.matched[r.Identifier()] = struct{}{}
 	return false, nil
 }
-func (c mycb) RuleNotMatching(r *Rule) (bool, error) {
+func (c *testCallback) RuleNotMatching(r *Rule) (bool, error) {
 	c.t.Logf("RuleNotMatching callback called: rule=%s", r.Identifier())
+	c.notMatched[r.Identifier()] = struct{}{}
 	return false, nil
 }
-func (c mycb) ScanFinished() (bool, error) {
+func (c *testCallback) ScanFinished() (bool, error) {
 	c.t.Log("ScanFinished callback called")
+	c.finished = true
 	return false, nil
 }
-func (c *mycb) ImportModule(s string) ([]byte, bool, error) {
+func (c *testCallback) ImportModule(s string) ([]byte, bool, error) {
 	c.t.Logf("ImportModule callback called: module=%s", s)
-	return []byte("{}"), false, nil
+	c.modules[s] = struct{}{}
+	if s == "tests" {
+		return []byte("callback-data-for-tests-module"), false, nil
+	}
+	return nil, false, nil
 }
-func (c *mycb) ModuleImported(*Object) (bool, error) {
+func (c *testCallback) ModuleImported(*Object) (bool, error) {
 	c.t.Log("ModuleImported callback called")
 	return false, nil
 }
 
 func TestImportDataCallback(t *testing.T) {
-	r := makeRules(t, `import "tests" import "pe" rule t1 { condition: true } rule t2 { condition: false }`)
-	if err := r.ScanMemWithCallback([]byte(""), 0, 0, &mycb{t}); err != nil {
+	cb := newTestCallback(t)
+	r := makeRules(t, `
+		import "tests"
+		import "pe"
+		rule t1 { condition: true }
+		rule t2 { condition: false }
+		rule t3 {
+			condition: tests.module_data == "callback-data-for-tests-module"
+		}`)
+	if err := r.ScanMemWithCallback([]byte(""), 0, 0, cb); err != nil {
 		t.Error(err)
+	}
+	for _, module := range []string{"tests", "pe"} {
+		if _, ok := cb.modules[module]; !ok {
+			t.Errorf("ImportModule was not called for %s", module)
+		}
+	}
+	for _, rule := range []string{"t1", "t3"} {
+		if _, ok := cb.matched["t1"]; !ok {
+			t.Errorf("RuleMatching was not called for %s", rule)
+		}
+	}
+	if _, ok := cb.notMatched["t2"]; !ok {
+		t.Errorf("RuleNotMatching was not called for %s", "t2")
+	}
+	if !cb.finished {
+		t.Errorf("ScanFinished was not called")
 	}
 	runtime.GC()
 }
