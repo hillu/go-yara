@@ -133,17 +133,18 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 	mptrs := make([]*C.YR_META, int(size))
 	C.rule_metas(r.cptr, &mptrs[0], &size)
 	for _, m := range mptrs {
-		var id, str *C.char
-		C.meta_get(m, &id, &str)
+		var cid, cstr *C.char
+		C.meta_get(m, &cid, &cstr)
+		id := C.GoString(cid)
 		switch m._type {
 		case C.META_TYPE_NULL:
-			metas[C.GoString(id)] = nil
+			metas[id] = nil
 		case C.META_TYPE_STRING:
-			metas[C.GoString(id)] = C.GoString(str)
+			metas[id] = C.GoString(cstr)
 		case C.META_TYPE_INTEGER:
-			metas[C.GoString(id)] = int(m.integer)
+			metas[id] = int(m.integer)
 		case C.META_TYPE_BOOLEAN:
-			metas[C.GoString(id)] = m.integer != 0
+			metas[id] = m.integer != 0
 		}
 	}
 	return
