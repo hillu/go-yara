@@ -204,7 +204,9 @@ func TestRule(t *testing.T) {
 		rule t1 : tag1 { meta: author = "Author One" strings: $a = "abc" fullword condition: $a }
         rule t2 : tag2 x y { meta: author = "Author Two" strings: $b = "def" condition: $b }
         rule t3 : tag3 x y z { meta: author = "Author Three" strings: $c = "ghi" condition: $c }
-		rule t4 { strings: $d = "qwe" condition: $d }`)
+		rule t4 { strings: $d = "qwe" condition: $d }
+		private rule t5 { condition: false }
+		global rule t6 { condition: false }`)
 	for _, r := range r.GetRules() {
 		t.Logf("%s:%s %#v", r.Namespace(), r.Identifier(), r.Tags())
 		switch r.Identifier() {
@@ -235,6 +237,26 @@ func TestRule(t *testing.T) {
 			}
 			if !reflect.DeepEqual(r.Metas(), map[string]interface{}{}) {
 				t.Error("Got wrong meta variables for t4")
+			}
+			if r.IsPrivate() {
+				t.Error("Rule t5 is not supposed to be private!")
+			}
+			if r.IsGlobal() {
+				t.Error("Rule t5 is not supposed to be global!")
+			}
+		case "t5":
+			if !r.IsPrivate() {
+				t.Error("Rule t5 is supposed to be private!")
+			}
+			if r.IsGlobal() {
+				t.Error("Rule t5 is not supposed to be global!")
+			}
+		case "t6":
+			if !r.IsGlobal() {
+				t.Error("Rule t5 is supposed to be global!")
+			}
+			if r.IsPrivate() {
+				t.Error("Rule t6 is not supposed to be private!")
 			}
 		default:
 			t.Errorf("Found unexpected rule name: %#v", r.Identifier())
