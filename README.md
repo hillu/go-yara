@@ -28,37 +28,43 @@ and linker flags from the `yara.pc` file that has been generated and
 installed by _YARA_'s build system. If _libyara_ has been installed to
 a custom location, the `PKG_CONFIG_PATH` environment variable can be
 used to point _pkg-config_ at the right `yara.pc` file. If
-_pkg-config_ cannot be used at all, please see "Build Tags" below.
+_pkg-config_ cannot be used at all, please refer to the "Build Tags" section.
 
 Linker errors in the compiler output such as
 
     undefined reference to `yr_compiler_add_file'
 
 indicate that the linker is probably looking at an old version of
-_libyara_.
+_libyara_. Please refer to the "Build Tags" section below on how to
+work with old YARA versions.
 
-### Cross-building for Windows
+### Cross-building
 
-_go-yara_ can be cross-built on a current Debian system using the
-MinGW cross compiler (_gcc-mingw-w64_) if the Go compiler contains
-Windows runtime libraries with CGO support
-([cf.](https://github.com/hillu/golang-go-cross)). After _libyara_ has
-been built from the source tree with the MinGW compiler using the
-usual `./configure && make && make install`, _go-yara_ can be built
-and installed. Some environment variables need to be set when running
-`go build` or `go install`:
+_go-yara_ can be cross-built for a different CPU
+architecture/operating system platform, provided a C cross-compiler
+for the target platform is available to be used by the _cgo_ tool.
+
+After the _yara_ library has been built from its source tree using the
+proper C cross-compiler through the usual `configure / make / make
+install` steps, _go-yara_ can be built and installed. Some environment
+variables need to be set when running `go build` or `go install`:
 
 - `GOOS`, `GOARCH` indicate the cross compilation target.
-- `CGO_ENABLED` is set to 1 beacuse it defaults to 0 when
+- `CGO_ENABLED` has to be set to 1 beacuse it defaults to 0 when
   cross-compiling.
-- `CC` has to specified because the _go_ tool has no knowledge on what
-  C compiler to use (it defaults to the system C compiler, usually
-  gcc).
-- `PKG_CONFIG_PATH` is set so the _go_ tool can determine correct
-  locations for headers and libraries through _pkg-config_.
+- `CC` has to specified because _cgo_ has no prior knowledge about
+  what C compiler to chose for cross-compiling. (it defaults to the
+  system C compiler, usually gcc).
+- `PKG_CONFIG_PATH` has to be set in so that _pkg-config_ which is run
+  by _cgo_ for determining compiler and linker flags can find the
+  `yara.pc` file generated while cross-building _yara_.
 
-32bit:
+#### Example: Cross-building for Windows on Debian/streach
 
+Install the MinGW C compiler `gcc-mingw-w64-i686`,
+`gcc-mingw-w64-x86-64` for Win32, Win64, respectively.
+
+Build _libyara_ and _go-yara_ for Win32:
 ```
 $ cd ${YARA_SRC} \
   && ./bootstrap.sh \
@@ -68,11 +74,10 @@ $ cd ${YARA_SRC} \
 $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
   CC=i686-w64-mingw32-gcc \
   PKG_CONFIG_PATH=${YARA_SRC}/i686-w64-mingw32/lib/pkgconfig \
-  go install -ldflags '-extldflags "-static"' github.com/hillu/go-yara
+  go inxstall -ldflags '-extldflags "-static"' github.com/hillu/go-yara
 ```
 
-64bit:
-
+Build _libyara_ and _go-yara_ for Win64:
 ```
 $ cd ${YARA_SRC} \
   && ./bootstrap.sh \
