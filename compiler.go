@@ -59,9 +59,9 @@ type compiler struct {
 // A CompilerMessage contains an error or warning message produced
 // while compiling sets of rules using AddString or AddFile.
 type CompilerMessage struct {
-	Filename string
-	Line     int
-	Text     string
+	Filename string `json:"filename,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Text     string `json:"text,omitempty"`
 }
 
 // NewCompiler creates a YARA compiler.

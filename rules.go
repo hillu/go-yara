@@ -34,18 +34,18 @@ var dummy *[]MatchRule
 // A MatchRule represents a rule successfully matched against a block
 // of data.
 type MatchRule struct {
-	Rule      string
-	Namespace string
-	Tags      []string
-	Meta      map[string]interface{}
-	Strings   []MatchString
+	Rule      string                 `json:"rule,omitempty"`
+	Namespace string                 `json:"namespace,omitempty"`
+	Tags      []string               `json:"tags,omitempty"`
+	Meta      map[string]interface{} `json:"meta,omitempty"`
+	Strings   []MatchString          `json:"strings,omitempty"`
 }
 
 // A MatchString represents a string declared and matched in a rule.
 type MatchString struct {
-	Name   string
-	Offset uint64
-	Data   []byte
+	Name   string `json:"name,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Data   []byte `json:"data,omitempty"`
 }
 
 // ScanFlags are used to tweak the behavior of Scan* functions.
