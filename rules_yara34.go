@@ -55,7 +55,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 	return
 }
 
-// ScanFileDescriptor scans a file using the ruleset. For every event
+// ScanFileDescriptorWithCallback scans a file using the ruleset. For every event
 // emitted by libyara, the appropriate method on the ScanCallback
 // object is called.
 func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {

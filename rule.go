@@ -150,12 +150,12 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 	return
 }
 
-// Returns true if the rule is marked as private
+// IsPrivate returns true if the rule is marked as private
 func (r *Rule) IsPrivate() bool {
 	return (r.cptr.g_flags & C.RULE_GFLAGS_PRIVATE) != 0
 }
 
-// Returns true if the rule is marked as global
+// IsGlobal returns true if the rule is marked as global
 func (r *Rule) IsGlobal() bool {
 	return (r.cptr.g_flags & C.RULE_GFLAGS_GLOBAL) != 0
 }
