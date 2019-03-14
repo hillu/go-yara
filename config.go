@@ -15,7 +15,7 @@ type ConfigName uint32
 
 const ConfigStackSize ConfigName = C.YR_CONFIG_STACK_SIZE
 
-// SetCnofiguration sets a global YARA configuration option.
+// SetConfiguration sets a global YARA configuration option.
 func SetConfiguration(name ConfigName, src interface{}) error {
 	i, ok := src.(int)
 	if !ok {
