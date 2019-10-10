@@ -118,13 +118,16 @@ func (r *Rule) Tags() (tags []string) {
 	return
 }
 
-// Metas returns a map containing the rule's meta variables. Values
-// can be of type string, int, bool, or nil.
-//
-// If a rule contains multiple meta variables with the same name, only
-// the last meta variable is returned as part of the map.
-func (r *Rule) Metas() (metas map[string]interface{}) {
-	metas = make(map[string]interface{})
+// Meta represents a rule meta variable. Value can be of type string,
+// int, boolean, or nil.
+type Meta struct {
+	Identifier string
+	Value      interface{}
+}
+
+// MetaList returns the rule's meta variables as a list of Meta
+// objects. It does not share the limitation of Metas().
+func (r *Rule) MetaList() (metas []Meta) {
 	var size C.int
 	C.rule_metas(r.cptr, nil, &size)
 	if size == 0 {
@@ -132,20 +135,50 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 	}
 	mptrs := make([]*C.YR_META, int(size))
 	C.rule_metas(r.cptr, &mptrs[0], &size)
-	for _, m := range mptrs {
+	for _, cptr := range mptrs {
 		var cid, cstr *C.char
-		C.meta_get(m, &cid, &cstr)
+		C.meta_get(cptr, &cid, &cstr)
 		id := C.GoString(cid)
-		switch m._type {
+		var val interface{}
+		switch cptr._type {
 		case C.META_TYPE_NULL:
-			metas[id] = nil
+			val = nil
 		case C.META_TYPE_STRING:
-			metas[id] = C.GoString(cstr)
+			val = C.GoString(cstr)
 		case C.META_TYPE_INTEGER:
-			metas[id] = int(m.integer)
+			val = int(cptr.integer)
 		case C.META_TYPE_BOOLEAN:
-			metas[id] = m.integer != 0
+			val = (cptr.integer != 0)
 		}
+		metas = append(metas, Meta{id, val})
+	}
+	return
+}
+
+// MetaMap returns a map containing the rule's meta variables, with
+// the variable names as keys. Values are collected into lists, this
+// allows for multiple variables with the same; individual values can
+// be of type string, int, bool, or nil.
+func (r *Rule) MetaMap() (metas map[string][]interface{}) {
+	metas = make(map[string][]interface{})
+	for _, m := range r.MetaList() {
+		metas[m.Identifier] = append(metas[m.Identifier], m.Value)
+	}
+	return
+}
+
+// Metas returns a map containing the rule's meta variables, with the
+// variable names as keys. Values can be of type string, int, bool, or
+// nil.
+//
+// Deprecated: If there are multiple meta variables with the same
+// name, the returned map contains only the last variable.
+//
+// Use MetaList or MetaMap instead.
+func (r *Rule) Metas() (metas map[string]interface{}) {
+	metas = make(map[string]interface{})
+	for _, m := range r.MetaList() {
+		metas[m.Identifier] = m.Value
 	}
 	return
 }
