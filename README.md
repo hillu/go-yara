@@ -93,7 +93,7 @@ $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
 ## Build Tags
 
 _go-yara_ is tested with the latest stable version of YARA, currently
-3.8. If you need to to build with an older version of YARA, certain
+3.11. If you need to to build with an older version of YARA, certain
 features that are not present in older versions can be excluded by
 passing a build tag such as `yara3.7`, `yara3.6`, `yara3.5`, etc.. If
 you want to build with a git snapshot of YARA, you may use a build tag
