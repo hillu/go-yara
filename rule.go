@@ -80,8 +80,8 @@ static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
 	int i = 0;
     
     if (!matches) {
-        *n = 0;
-        return;
+	*n = 0;
+	return;
     }
 
 	yr_string_matches_foreach(s, match) {
