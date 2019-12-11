@@ -78,6 +78,12 @@ static const char* string_identifier(YR_STRING* s) {
 static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
 	const YR_MATCH *match;
 	int i = 0;
+    
+    if (!matches) {
+        *n = 0;
+        return 
+    }
+
 	yr_string_matches_foreach(s, match) {
 		if (i < *n)
 			matches[i] = match;
