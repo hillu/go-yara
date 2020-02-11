@@ -36,6 +36,7 @@ import (
 // Scanner contains a YARA scanner
 type Scanner struct {
 	*scanner
+	rules *Rules
 }
 
 type scanner struct {
@@ -48,7 +49,7 @@ func NewScanner(r *Rules) (*Scanner, error) {
 	if err := newError(C.yr_scanner_create(r.cptr, &yrScanner)); err != nil {
 		return nil, err
 	}
-	s := &Scanner{scanner: &scanner{cptr: yrScanner}}
+	s := &Scanner{scanner: &scanner{cptr: yrScanner}, rules: r}
 	runtime.SetFinalizer(s.scanner, (*scanner).finalize)
 	return s, nil
 }
