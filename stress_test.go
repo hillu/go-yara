@@ -114,7 +114,8 @@ func TestScannerFileWalk(t *testing.T) {
 				}
 				s.DefineVariable("filepath", name)
 				s.DefineVariable("filename", info.Name())
-				if m, err := s.ScanFile(name, 0, 0); err == nil {
+				var m MatchRules
+				if err := s.SetCallback(&m).ScanFile(name); err == nil {
 					fmt.Printf("[%02d] Scan \"%s\": %d\n", i, path.Base(name), len(m))
 				} else {
 					fmt.Printf("[%02d] Scan \"%s\": %s\n", i, path.Base(name), err)

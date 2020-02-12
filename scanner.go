@@ -39,6 +39,7 @@ type Scanner struct {
 	// The Scanner struct has to hold a pointer to the rules
 	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
+	cb    unsafe.Pointer
 }
 
 type scanner struct {
@@ -66,6 +67,7 @@ func (s *scanner) finalize() {
 // automatically set up on creation, it should not be necessary to
 // explicitly all this method.
 func (s *Scanner) Destroy() {
+	s.unsetCallback()
 	if s.scanner != nil {
 		s.scanner.finalize()
 		s.scanner = nil
@@ -104,31 +106,44 @@ func (s *Scanner) DefineVariable(identifier string, value interface{}) (err erro
 	return
 }
 
-// ScanMem scans an in-memory buffer using the scanner, returning
-// matches via a list of MatchRule objects.
-func (s *Scanner) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = s.ScanMemWithCallback(buf, flags, timeout, &cb)
-	matches = cb
-	return
+// SetFlags sets flags for the scanner.
+func (s *Scanner) SetFlags(flags ScanFlags) *Scanner {
+	C.yr_scanner_set_flags(s.cptr, C.int(flags))
+	return s
 }
 
-// ScanMemWithCallback scans an in-memory buffer using the scanner.
-// For every event emitted by libyara, the appropriate method on the
-// ScanCallback object is called.
-func (s *Scanner) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+// SetTimeout sets a timeout for the scanner.
+func (s *Scanner) SetTimeout(timeout time.Duration) *Scanner {
+	C.yr_scanner_set_timeout(s.cptr, C.int(timeout/time.Second))
+	return s
+}
+
+func (s *Scanner) unsetCallback() {
+	if s.cb != nil {
+		callbackData.Get(s.cb).(*scanCallbackContainer).destroy()
+		callbackData.Delete(s.cb)
+	}
+}
+
+// SetCallback sets a callback object for the scanner. For every event
+// emitted by libyara during subsequent scan, the appropriate method
+// on the ScanCallback object is called.
+func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
+	s.unsetCallback()
+	if cb == nil {
+		return s
+	}
+	s.cb = callbackData.Put(&scanCallbackContainer{ScanCallback: cb})
+	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), s.cb)
+	return s
+}
+
+// ScanMem scans an in-memory buffer using the scanner.
+func (s *Scanner) ScanMem(buf []byte) (err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
-	defer callbackData.Delete(id)
-
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
-	C.yr_scanner_set_timeout(s.cptr, C.int(timeout/time.Second))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), id)
 
 	err = newError(C.yr_scanner_scan_mem(
 		s.cptr,
@@ -138,29 +153,10 @@ func (s *Scanner) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.
 	return
 }
 
-// ScanFile scans a file using the scanner, returning
-// matches via a list of MatchRule objects.
-func (s *Scanner) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = s.ScanFileWithCallback(filename, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanFileWithCallback scans a file using the scanner.
-// For every event emitted by libyara, the appropriate method on the
-// ScanCallback object is called.
-func (s *Scanner) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+// ScanFile scans a file using the scanner.
+func (s *Scanner) ScanFile(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
-	defer callbackData.Delete(id)
-
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
-	C.yr_scanner_set_timeout(s.cptr, C.int(timeout/time.Second))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), id)
 
 	err = newError(C.yr_scanner_scan_file(
 		s.cptr,
@@ -170,28 +166,8 @@ func (s *Scanner) ScanFileWithCallback(filename string, flags ScanFlags, timeout
 	return
 }
 
-// ScanFileDescriptor scans a file using the scanner, returning
-// matches via a list of MatchRule objects.
-func (s *Scanner) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = s.ScanFileDescriptorWithCallback(fd, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanFileDescriptorWithCallback scans a file using the scanner. For every event
-// emitted by libyara, the appropriate method on the ScanCallback
-// object is called.
-func (s *Scanner) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
-	defer callbackData.Delete(id)
-
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
-	C.yr_scanner_set_timeout(s.cptr, C.int(timeout/time.Second))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), id)
-
+// ScanFileDescriptor scans a file using the scanner.
+func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	err = newError(C.yr_scanner_scan_fd(
 		s.cptr,
 		C.int(fd),
@@ -200,28 +176,8 @@ func (s *Scanner) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, ti
 	return
 }
 
-// ScanProc scans a live process using the scanner, returning matches
-// via a list of MatchRule objects.
-func (s *Scanner) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = s.ScanProcWithCallback(pid, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanProcWithCallback scans a live process using the scanner.
-// For every event emitted by libyara, the appropriate method on the
-// ScanCallback object is called.
-func (s *Scanner) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
-	defer callbackData.Delete(id)
-
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
-	C.yr_scanner_set_timeout(s.cptr, C.int(timeout/time.Second))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), id)
-
+// ScanProc scans a live process using the scanner.
+func (s *Scanner) ScanProc(pid int) (err error) {
 	err = newError(C.yr_scanner_scan_proc(
 		s.cptr,
 		C.int(pid),
