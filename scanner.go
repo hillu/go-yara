@@ -36,6 +36,8 @@ import (
 // Scanner contains a YARA scanner
 type Scanner struct {
 	*scanner
+	// The Scanner struct has to hold a pointer to the rules
+	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
 }
 
