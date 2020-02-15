@@ -128,6 +128,9 @@ func (s *Scanner) unsetCallback() {
 // SetCallback sets a callback object for the scanner. For every event
 // emitted by libyara during subsequent scan, the appropriate method
 // on the ScanCallback object is called.
+//
+// Setting a callback object is not necessary (and will be overridden)
+// when using any of the ScanXXX2 methods.
 func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 	s.unsetCallback()
 	if cb == nil {
@@ -153,6 +156,15 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	return
 }
 
+func (s *Scanner) ScanMem2(buf []byte) (matches []MatchRule, err error) {
+	var m MatchRules
+	if err = s.SetCallback(&m).ScanMem(buf); err == nil {
+		matches = m
+	}
+	s.unsetCallback()
+	return
+}
+
 // ScanFile scans a file using the scanner.
 func (s *Scanner) ScanFile(filename string) (err error) {
 	cfilename := C.CString(filename)
@@ -166,6 +178,15 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 	return
 }
 
+func (s *Scanner) ScanFile2(filename string) (matches []MatchRule, err error) {
+	var m MatchRules
+	if err = s.SetCallback(&m).ScanFile(filename); err == nil {
+		matches = m
+	}
+	s.unsetCallback()
+	return
+}
+
 // ScanFileDescriptor scans a file using the scanner.
 func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	err = newError(C.yr_scanner_scan_fd(
@@ -176,6 +197,15 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	return
 }
 
+func (s *Scanner) ScanFileDescriptor2(fd uintptr) (matches []MatchRule, err error) {
+	var m MatchRules
+	if err = s.SetCallback(&m).ScanFileDescriptor(fd); err == nil {
+		matches = m
+	}
+	s.unsetCallback()
+	return
+}
+
 // ScanProc scans a live process using the scanner.
 func (s *Scanner) ScanProc(pid int) (err error) {
 	err = newError(C.yr_scanner_scan_proc(
@@ -183,5 +213,14 @@ func (s *Scanner) ScanProc(pid int) (err error) {
 		C.int(pid),
 	))
 	keepAlive(s)
+	return
+}
+
+func (s *Scanner) ScanProc2(pid int) (matches []MatchRule, err error) {
+	var m MatchRules
+	if err = s.SetCallback(&m).ScanProc(pid); err == nil {
+		matches = m
+	}
+	s.unsetCallback()
 	return
 }
