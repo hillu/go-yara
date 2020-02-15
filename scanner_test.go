@@ -32,6 +32,8 @@ func TestScannerSimpleMatch(t *testing.T) {
 	m := MatchRules{}
 	if err := s.SetCallback(&m).ScanMem([]byte(" abc ")); err != nil {
 		t.Errorf("ScanMem: %s", err)
+	} else if len(m) != 1 {
+		t.Errorf("ScanMem: wanted 1 match, got %d", len(m))
 	}
 	t.Logf("Matches: %+v", m)
 }
@@ -46,6 +48,8 @@ func TestScannerSimpleFileMatch(t *testing.T) {
 	var m MatchRules
 	if err := s.SetCallback(&m).ScanFile(tf.Name()); err != nil {
 		t.Errorf("ScanFile(%s): %s", tf.Name(), err)
+	} else if len(m) != 1 {
+		t.Errorf("ScanMem: wanted 1 match, got %d", len(m))
 	}
 	t.Logf("Matches: %+v", m)
 }
@@ -60,6 +64,8 @@ func TestScannerSimpleFileDescriptorMatch(t *testing.T) {
 	var m MatchRules
 	if err := s.SetCallback(&m).ScanFileDescriptor(tf.Fd()); err != nil {
 		t.Errorf("ScanFileDescriptor(%v): %s", tf.Fd(), err)
+	} else if len(m) != 1 {
+		t.Errorf("ScanMem: wanted 1 match, got %d", len(m))
 	}
 	t.Logf("Matches: %+v", m)
 
