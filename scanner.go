@@ -33,13 +33,17 @@ import (
 	"unsafe"
 )
 
-// Scanner contains a YARA scanner
+// Scanner contains a YARA scanner (YR_SCANNER). The main difference
+// to Rules (YR_RULES) is that it is possible to set variables in a
+// thread-safe manner (cf.
+// https://github.com/VirusTotal/yara/issues/350)
 type Scanner struct {
 	*scanner
 	// The Scanner struct has to hold a pointer to the rules
 	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
-	cb    unsafe.Pointer
+	// reference to the currently set callback object
+	cb unsafe.Pointer
 }
 
 type scanner struct {
@@ -122,6 +126,7 @@ func (s *Scanner) unsetCallback() {
 	if s.cb != nil {
 		callbackData.Get(s.cb).(*scanCallbackContainer).destroy()
 		callbackData.Delete(s.cb)
+		s.cb = nil
 	}
 }
 
@@ -129,8 +134,8 @@ func (s *Scanner) unsetCallback() {
 // emitted by libyara during subsequent scan, the appropriate method
 // on the ScanCallback object is called.
 //
-// Setting a callback object is not necessary (and will be overridden)
-// when using any of the ScanXXX2 methods.
+// For the common case where only a list of matched rules is relevant,
+// setting a callback object is not necessary.
 func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 	s.unsetCallback()
 	if cb == nil {
@@ -142,10 +147,20 @@ func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 }
 
 // ScanMem scans an in-memory buffer using the scanner.
-func (s *Scanner) ScanMem(buf []byte) (err error) {
+//
+// If a callback object has been set for the scanner using
+// SetCAllback, matches is nil and the callback object is used instead
+// to collect scan events.
+func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
+	}
+
+	if s.cb == nil {
+		m := (*MatchRules)(&matches)
+		s.SetCallback(m)
+		defer s.unsetCallback()
 	}
 
 	err = newError(C.yr_scanner_scan_mem(
@@ -156,19 +171,20 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	return
 }
 
-func (s *Scanner) ScanMem2(buf []byte) (matches []MatchRule, err error) {
-	var m MatchRules
-	if err = s.SetCallback(&m).ScanMem(buf); err == nil {
-		matches = m
-	}
-	s.unsetCallback()
-	return
-}
-
 // ScanFile scans a file using the scanner.
-func (s *Scanner) ScanFile(filename string) (err error) {
+//
+// If a callback object has been set for the scanner using
+// SetCAllback, matches is nil and the callback object is used instead
+// to collect scan events.
+func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
+
+	if s.cb == nil {
+		m := (*MatchRules)(&matches)
+		s.SetCallback(m)
+		defer s.unsetCallback()
+	}
 
 	err = newError(C.yr_scanner_scan_file(
 		s.cptr,
@@ -178,17 +194,18 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 	return
 }
 
-func (s *Scanner) ScanFile2(filename string) (matches []MatchRule, err error) {
-	var m MatchRules
-	if err = s.SetCallback(&m).ScanFile(filename); err == nil {
-		matches = m
-	}
-	s.unsetCallback()
-	return
-}
-
 // ScanFileDescriptor scans a file using the scanner.
-func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
+//
+// If a callback object has been set for the scanner using
+// SetCAllback, matches is nil and the callback object is used instead
+// to collect scan events.
+func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error) {
+	if s.cb == nil {
+		m := (*MatchRules)(&matches)
+		s.SetCallback(m)
+		defer s.unsetCallback()
+	}
+
 	err = newError(C.yr_scanner_scan_fd(
 		s.cptr,
 		C.int(fd),
@@ -197,30 +214,22 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	return
 }
 
-func (s *Scanner) ScanFileDescriptor2(fd uintptr) (matches []MatchRule, err error) {
-	var m MatchRules
-	if err = s.SetCallback(&m).ScanFileDescriptor(fd); err == nil {
-		matches = m
-	}
-	s.unsetCallback()
-	return
-}
-
 // ScanProc scans a live process using the scanner.
-func (s *Scanner) ScanProc(pid int) (err error) {
+//
+// If a callback object has been set for the scanner using
+// SetCAllback, matches is nil and the callback object is used instead
+// to collect scan events.
+func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
+	if s.cb == nil {
+		m := (*MatchRules)(&matches)
+		s.SetCallback(m)
+		defer s.unsetCallback()
+	}
+
 	err = newError(C.yr_scanner_scan_proc(
 		s.cptr,
 		C.int(pid),
 	))
 	keepAlive(s)
-	return
-}
-
-func (s *Scanner) ScanProc2(pid int) (matches []MatchRule, err error) {
-	var m MatchRules
-	if err = s.SetCallback(&m).ScanProc(pid); err == nil {
-		matches = m
-	}
-	s.unsetCallback()
 	return
 }
