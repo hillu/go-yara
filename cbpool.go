@@ -63,7 +63,7 @@ func (p *cbPool) checkPointer(ptr unsafe.Pointer) {
 	}
 }
 
-// Put accesses an element stored in the cbPool, using a pointer
+// Get accesses an element stored in the cbPool, using a pointer
 // previously returned by Put. It panics if the pointer is invalid or
 // if it references an empty slot.
 func (p *cbPool) Get(ptr unsafe.Pointer) interface{} {
