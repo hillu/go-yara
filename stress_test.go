@@ -95,6 +95,10 @@ func TestScannerFileWalk(t *testing.T) {
 	for i := 0; i < 32; i++ {
 		wg.Add(1)
 		go func(i int) {
+			s, err := NewScanner(r)
+			if err != nil {
+				t.Fatal(err)
+			}
 			filepath.Walk(initialPath, func(name string, info os.FileInfo, inErr error) error {
 				fmt.Printf("[%02d] %s\n", i, name)
 				if inErr != nil {
@@ -107,10 +111,6 @@ func TestScannerFileWalk(t *testing.T) {
 				}
 				if !info.Mode().IsRegular() || info.Size() >= 2000000 {
 					return nil
-				}
-				s, err := NewScanner(r)
-				if err != nil {
-					t.Fatal(err)
 				}
 				s.DefineVariable("filepath", name)
 				s.DefineVariable("filename", info.Name())
