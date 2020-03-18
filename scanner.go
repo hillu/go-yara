@@ -206,7 +206,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error
 		defer s.unsetCallback()
 	}
 
-	err = newError(C.yr_scanner_scan_fd(
+	err = newError(C._yr_scanner_scan_fd(
 		s.cptr,
 		C.int(fd),
 	))
