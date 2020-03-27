@@ -42,8 +42,8 @@ type Scanner struct {
 	// The Scanner struct has to hold a pointer to the rules
 	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
-	// reference to the currently set callback object
-	cb unsafe.Pointer
+	// current callback object, set by SetCallback
+	cb ScanCallback
 }
 
 type scanner struct {
@@ -71,7 +71,6 @@ func (s *scanner) finalize() {
 // automatically set up on creation, it should not be necessary to
 // explicitly all this method.
 func (s *Scanner) Destroy() {
-	s.unsetCallback()
 	if s.scanner != nil {
 		s.scanner.finalize()
 		s.scanner = nil
@@ -122,14 +121,6 @@ func (s *Scanner) SetTimeout(timeout time.Duration) *Scanner {
 	return s
 }
 
-func (s *Scanner) unsetCallback() {
-	if s.cb != nil {
-		callbackData.Get(s.cb).(*scanCallbackContainer).destroy()
-		callbackData.Delete(s.cb)
-		s.cb = nil
-	}
-}
-
 // SetCallback sets a callback object for the scanner. For every event
 // emitted by libyara during subsequent scan, the appropriate method
 // on the ScanCallback object is called.
@@ -137,13 +128,24 @@ func (s *Scanner) unsetCallback() {
 // For the common case where only a list of matched rules is relevant,
 // setting a callback object is not necessary.
 func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
-	s.unsetCallback()
-	if cb == nil {
-		return s
-	}
-	s.cb = callbackData.Put(&scanCallbackContainer{ScanCallback: cb})
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), s.cb)
+	s.cb = cb
 	return s
+}
+
+// putCallbackData stores the appropriate callback object (pre-set
+// object or ad-hoc return-value-based ) into callbackData, returning
+// a pointer. The object must be removed from callbackData by the
+// calling ScanXxxx function.
+func (s *Scanner) putCallbackData(matches *[]MatchRule) unsafe.Pointer {
+	var c scanCallbackContainer
+	if s.cb != nil {
+		c.ScanCallback = s.cb
+	} else {
+		c.ScanCallback = (*MatchRules)(matches)
+	}
+	ptr := callbackData.Put(&c)
+	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
+	return ptr
 }
 
 // ScanMem scans an in-memory buffer using the scanner.
@@ -157,11 +159,8 @@ func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error) {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
 
-	if s.cb == nil {
-		m := (*MatchRules)(&matches)
-		s.SetCallback(m)
-		defer s.unsetCallback()
-	}
+	cbPtr := s.putCallbackData(&matches)
+	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_mem(
 		s.cptr,
@@ -180,11 +179,8 @@ func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 
-	if s.cb == nil {
-		m := (*MatchRules)(&matches)
-		s.SetCallback(m)
-		defer s.unsetCallback()
-	}
+	cbPtr := s.putCallbackData(&matches)
+	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_file(
 		s.cptr,
@@ -200,11 +196,8 @@ func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
 // SetCAllback, matches is nil and the callback object is used instead
 // to collect scan events.
 func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error) {
-	if s.cb == nil {
-		m := (*MatchRules)(&matches)
-		s.SetCallback(m)
-		defer s.unsetCallback()
-	}
+	cbPtr := s.putCallbackData(&matches)
+	defer callbackData.Delete(cbPtr)
 
 	err = newError(C._yr_scanner_scan_fd(
 		s.cptr,
@@ -220,11 +213,8 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error
 // SetCAllback, matches is nil and the callback object is used instead
 // to collect scan events.
 func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
-	if s.cb == nil {
-		m := (*MatchRules)(&matches)
-		s.SetCallback(m)
-		defer s.unsetCallback()
-	}
+	cbPtr := s.putCallbackData(&matches)
+	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_proc(
 		s.cptr,
