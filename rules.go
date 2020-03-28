@@ -225,8 +225,13 @@ func (r *Rules) DefineVariable(identifier string, value interface{}) (err error)
 // GetRules returns a slice of rule objects that are part of the
 // ruleset
 func (r *Rules) GetRules() (rv []Rule) {
-	for p := unsafe.Pointer(r.cptr.rules_list_head); (*C.YR_RULE)(p).g_flags&C.RULE_GFLAGS_NULL == 0; p = unsafe.Pointer(uintptr(p) + unsafe.Sizeof(*r.cptr.rules_list_head)) {
-		rv = append(rv, Rule{(*C.YR_RULE)(p)})
+	// Equivalent to:
+	// #define yr_rules_foreach(rules, rule) \
+	//     for (rule = rules->rules_list_head; !RULE_IS_NULL(rule); rule++)
+	// #define RULE_IS_NULL(x) \
+	//     (((x)->g_flags) & RULE_GFLAGS_NULL)
+	for p := r.cptr.rules_list_head; p.g_flags&C.RULE_GFLAGS_NULL == 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
+		rv = append(rv, Rule{p})
 	}
 	return
 }
