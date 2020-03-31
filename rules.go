@@ -78,8 +78,7 @@ func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Du
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
+	cbc := makeScanCallbackContainer(cb)
 	id := callbackData.Put(cbc)
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem(
@@ -109,9 +108,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
+	id := callbackData.Put(makeScanCallbackContainer(cb))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
@@ -137,9 +134,7 @@ func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (match
 // every event emitted by libyara, the appropriate method on the
 // ScanCallback object is called.
 func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	cbc := &scanCallbackContainer{ScanCallback: cb}
-	defer cbc.destroy()
-	id := callbackData.Put(cbc)
+	id := callbackData.Put(makeScanCallbackContainer(cb))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,

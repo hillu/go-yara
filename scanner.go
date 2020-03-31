@@ -137,13 +137,13 @@ func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 // a pointer. The object must be removed from callbackData by the
 // calling ScanXxxx function.
 func (s *Scanner) putCallbackData(matches *[]MatchRule) unsafe.Pointer {
-	var c scanCallbackContainer
+	var sc ScanCallback
 	if s.cb != nil {
-		c.ScanCallback = s.cb
+		sc = s.cb
 	} else {
-		c.ScanCallback = (*MatchRules)(matches)
+		sc = (*MatchRules)(matches)
 	}
-	ptr := callbackData.Put(&c)
+	ptr := callbackData.Put(makeScanCallbackContainer(sc))
 	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
 	return ptr
 }
