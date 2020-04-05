@@ -11,12 +11,12 @@ package yara
 // #include <yara.h>
 import "C"
 
-// Enable enables a single rule
+// Enable enables a single rule.
 func (r *Rule) Enable() {
 	C.yr_rule_enable(r.cptr)
 }
 
-// Disable disables a single rule
+// Disable disables a single rule.
 func (r *Rule) Disable() {
 	C.yr_rule_disable(r.cptr)
 }

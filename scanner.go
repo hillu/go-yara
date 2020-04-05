@@ -36,7 +36,7 @@ import (
 // Scanner contains a YARA scanner (YR_SCANNER). The main difference
 // to Rules (YR_RULES) is that it is possible to set variables in a
 // thread-safe manner (cf.
-// https://github.com/VirusTotal/yara/issues/350)
+// https://github.com/VirusTotal/yara/issues/350).
 type Scanner struct {
 	*scanner
 	// The Scanner struct has to hold a pointer to the rules

@@ -91,7 +91,7 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 	return
 }
 
-// ReadRules retrieves a compiled ruleset from an io.Reader
+// ReadRules retrieves a compiled ruleset from an io.Reader.
 func ReadRules(rd io.Reader) (*Rules, error) {
 	r := &Rules{rules: &rules{}}
 	id := callbackData.Put(rd)

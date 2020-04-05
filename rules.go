@@ -223,7 +223,7 @@ func (r *Rules) DefineVariable(identifier string, value interface{}) (err error)
 }
 
 // GetRules returns a slice of rule objects that are part of the
-// ruleset
+// ruleset.
 func (r *Rules) GetRules() (rv []Rule) {
 	// Equivalent to:
 	// #define yr_rules_foreach(rules, rule) \

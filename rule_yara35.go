@@ -12,7 +12,7 @@ package yara
 import "C"
 import "unsafe"
 
-// Data returns the blob of data associated with the string match
+// Data returns the blob of data associated with the string match.
 func (m *Match) Data() []byte {
 	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
 }

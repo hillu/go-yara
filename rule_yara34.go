@@ -15,7 +15,7 @@ import (
 	"unsafe"
 )
 
-// Data returns the blob of data associated with the string match
+// Data returns the blob of data associated with the string match.
 func (m *Match) Data() []byte {
 	tmpbuf := []byte{}
 	// Use unsafe instead of C.GoBytes to avoid "cgo argument has Go
