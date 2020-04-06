@@ -53,6 +53,7 @@ func Example_ScanMemBlocks() {
 	buf[60000] = 0x7f
 	copy(buf[10000:], []byte("abc"))
 	copy(buf[20000:], []byte("def"))
+	copy(buf[1022:], []byte("ghij"))
 
 	it := &Iterator{blocksize: 1024, rs: bytes.NewReader(buf)}
 
@@ -63,6 +64,16 @@ rule A {
 		$def = "def"
 	condition:
 		uint8(0) == 0x7f and uint8(60000) == 0x7f and $abc at 10000 and $def at 20000
+}
+
+// we do not expect rule B to be matched since the relevant value
+// crosses the block boundary at 1024. (However, it does match when
+// setting a blocksize that does not cause this value to be split.)
+rule B {
+    strings:
+        $ghij = "ghij"
+    condition:
+        $ghij at 1022 or uint32be(1022) == 0x6768696a
 }
 	`, nil)
 
