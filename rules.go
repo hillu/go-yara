@@ -44,6 +44,7 @@ type MatchRule struct {
 // A MatchString represents a string declared and matched in a rule.
 type MatchString struct {
 	Name   string
+	Base   uint64
 	Offset uint64
 	Data   []byte
 }

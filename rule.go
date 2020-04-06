@@ -236,6 +236,12 @@ func (s *String) Matches() (matches []Match) {
 	return
 }
 
+// Base returns the base offset of the memory block in which the
+// string match occurred.
+func (m *Match) Base() int64 {
+	return int64(m.cptr.base)
+}
+
 // Offset returns the offset at which the string match occurred.
 func (m *Match) Offset() int64 {
 	return int64(m.cptr.offset)
@@ -246,6 +252,7 @@ func (r *Rule) getMatchStrings() (matchstrings []MatchString) {
 		for _, m := range s.Matches() {
 			matchstrings = append(matchstrings, MatchString{
 				Name:   s.Identifier(),
+				Base:   uint64(m.Base()),
 				Offset: uint64(m.Offset()),
 				Data:   m.Data(),
 			})
