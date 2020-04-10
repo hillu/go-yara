@@ -223,3 +223,27 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 	keepAlive(s)
 	return
 }
+
+// GetLastErrorRule returns the Rule which caused the last error
+//
+// The result is nil, if scanner returned no rule
+func (s *Scanner) GetLastErrorRule() (r *Rule) {
+	ptr := C.yr_scanner_last_error_rule(s.cptr)
+	if ptr != nil {
+		r = &Rule{ptr}
+	}
+	runtime.KeepAlive(s)
+	return
+}
+
+// GetLastErrorString returns the String which caused the last error
+//
+// The result is nil, if scanner returned no string
+func (s *Scanner) GetLastErrorString() (r *String) {
+	ptr := C.yr_scanner_last_error_string(s.cptr)
+	if ptr != nil {
+		r = &String{ptr}
+	}
+	runtime.KeepAlive(s)
+	return
+}
