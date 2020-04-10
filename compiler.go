@@ -125,7 +125,7 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return
 }
 
@@ -157,7 +157,7 @@ func (c *Compiler) DefineVariable(identifier string, value interface{}) (err err
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return
 }
 
@@ -172,7 +172,7 @@ func (c *Compiler) GetRules() (*Rules, error) {
 	}
 	r := &Rules{rules: &rules{cptr: yrRules}}
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return r, nil
 }
 

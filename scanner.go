@@ -105,7 +105,7 @@ func (s *Scanner) DefineVariable(identifier string, value interface{}) (err erro
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
-	keepAlive(s)
+	runtime.KeepAlive(s)
 	return
 }
 
@@ -166,7 +166,7 @@ func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error) {
 		s.cptr,
 		ptr,
 		C.size_t(len(buf))))
-	keepAlive(s)
+	runtime.KeepAlive(s)
 	return
 }
 
@@ -186,7 +186,7 @@ func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
 		s.cptr,
 		cfilename,
 	))
-	keepAlive(s)
+	runtime.KeepAlive(s)
 	return
 }
 
@@ -203,7 +203,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error
 		s.cptr,
 		C.int(fd),
 	))
-	keepAlive(s)
+	runtime.KeepAlive(s)
 	return
 }
 
@@ -220,6 +220,6 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 		s.cptr,
 		C.int(pid),
 	))
-	keepAlive(s)
+	runtime.KeepAlive(s)
 	return
 }

@@ -68,7 +68,7 @@ func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, time
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -85,7 +85,7 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 		user_data: id,
 	}
 	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 

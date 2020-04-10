@@ -19,6 +19,7 @@ void freeCallback(char*, void*);
 import "C"
 import (
 	"reflect"
+	"runtime"
 	"unsafe"
 )
 
@@ -41,7 +42,7 @@ type CompilerIncludeFunc func(name, filename, namespace string) []byte
 func (c *Compiler) DisableIncludes() {
 	C.yr_compiler_set_include_callback(c.compiler.cptr, nil, nil, nil)
 	c.setCallbackData(nil)
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return
 }
 
@@ -88,6 +89,6 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
 		id,
 	)
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return
 }

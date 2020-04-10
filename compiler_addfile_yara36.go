@@ -18,6 +18,7 @@ import "C"
 import (
 	"errors"
 	"os"
+	"runtime"
 	"unsafe"
 )
 
@@ -47,6 +48,6 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
 		err = errors.New(msg)
 	}
-	keepAlive(c)
+	runtime.KeepAlive(c)
 	return
 }

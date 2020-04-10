@@ -90,7 +90,7 @@ func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Du
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -118,7 +118,7 @@ func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout t
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -144,7 +144,7 @@ func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Dura
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -153,7 +153,7 @@ func (r *Rules) Save(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	err = newError(C.yr_rules_save(r.cptr, cfilename))
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -214,7 +214,7 @@ func (r *Rules) DefineVariable(identifier string, value interface{}) (err error)
 	default:
 		err = errors.New("wrong value type passed to DefineVariable; bool, int64, float64, string are accepted")
 	}
-	keepAlive(r)
+	runtime.KeepAlive(r)
 	return
 }
 
