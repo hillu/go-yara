@@ -8,23 +8,27 @@ package yara
 
 // #include <yara.h>
 import "C"
-import (
-	"errors"
-	"fmt"
-)
+import "strconv"
+
+// Error encapsulates the C API error codes.
+type Error int
+
+func (e Error) Error() string {
+	if str, ok := errorStrings[int(e)]; ok {
+		return str
+	}
+	return "unknown YARA error " + strconv.Itoa(int(e))
+}
 
 func newError(code C.int) error {
-	if code == 0 {
-		return nil
+	if code != 0 {
+		return Error(code)
 	}
-	if str, ok := errorStrings[code]; ok {
-		return errors.New(str)
-	}
-	return fmt.Errorf("unknown error %d", code)
+	return nil
 }
 
 // FIXME: This should be generated from yara/error.h
-var errorStrings = map[C.int]string{
+var errorStrings = map[int]string{
 	C.ERROR_INSUFICIENT_MEMORY:           "insufficient memory",
 	C.ERROR_COULD_NOT_ATTACH_TO_PROCESS:  "could not attach to process",
 	C.ERROR_COULD_NOT_OPEN_FILE:          "could not open file",
