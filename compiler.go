@@ -48,16 +48,15 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, mess
 // A Compiler encapsulates the YARA compiler that transforms rules
 // into YARA's internal, binary form which in turn is used for
 // scanning files or memory blocks.
+//
+// Since this type contains a C pointer to a YR_COMPILER structure
+// that may be automatically freed, it should not be copied.
 type Compiler struct {
-	*compiler
 	Errors   []CompilerMessage
 	Warnings []CompilerMessage
 	// used for include callback
 	callbackData unsafe.Pointer
-}
-
-type compiler struct {
-	cptr *C.YR_COMPILER
+	cptr         *C.YR_COMPILER
 }
 
 // A CompilerMessage contains an error or warning message produced
@@ -74,13 +73,19 @@ func NewCompiler() (*Compiler, error) {
 	if err := newError(C.yr_compiler_create(&yrCompiler)); err != nil {
 		return nil, err
 	}
-	c := &Compiler{compiler: &compiler{cptr: yrCompiler}}
-	runtime.SetFinalizer(c.compiler, (*compiler).finalize)
+	c := &Compiler{cptr: yrCompiler}
+	runtime.SetFinalizer(c, (*Compiler).Destroy)
 	return c, nil
 }
 
-func (c *compiler) finalize() {
-	C.yr_compiler_destroy(c.cptr)
+// Destroy destroys the YARA data structure representing a compiler.
+//
+// It should not be necessary to call this method directly.
+func (c *Compiler) Destroy() {
+	if c.cptr != nil {
+		C.yr_compiler_destroy(c.cptr)
+		c.cptr = nil
+	}
 	runtime.SetFinalizer(c, nil)
 }
 
@@ -89,18 +94,6 @@ func (c *Compiler) setCallbackData(ptr unsafe.Pointer) {
 		callbackData.Delete(c.callbackData)
 	}
 	c.callbackData = ptr
-}
-
-// Destroy destroys the YARA data structure representing a compiler.
-// Since a Finalizer for the underlying YR_COMPILER structure is
-// automatically set up on creation, it should not be necessary to
-// explicitly call this method.
-func (c *Compiler) Destroy() {
-	c.setCallbackData(nil)
-	if c.compiler != nil {
-		c.compiler.finalize()
-		c.compiler = nil
-	}
 }
 
 // AddFile compiles rules from a file. Rules are added to the
@@ -204,8 +197,8 @@ func (c *Compiler) GetRules() (*Rules, error) {
 	if err := newError(C.yr_compiler_get_rules(c.cptr, &yrRules)); err != nil {
 		return nil, err
 	}
-	r := &Rules{rules: &rules{cptr: yrRules}}
-	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	r := &Rules{cptr: yrRules}
+	runtime.SetFinalizer(r, (*Rules).Destroy)
 	runtime.KeepAlive(c)
 	return r, nil
 }
@@ -262,7 +255,7 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 	id := callbackData.Put(cb)
 	c.setCallbackData(id)
 	C.yr_compiler_set_include_callback(
-		c.compiler.cptr,
+		c.cptr,
 		C.YR_COMPILER_INCLUDE_CALLBACK_FUNC(C.includeCallback),
 		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
 		id,
@@ -274,7 +267,7 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 // DisableIncludes disables all include statements in the compiler.
 // See yr_compiler_set_include_callbacks.
 func (c *Compiler) DisableIncludes() {
-	C.yr_compiler_set_include_callback(c.compiler.cptr, nil, nil, nil)
+	C.yr_compiler_set_include_callback(c.cptr, nil, nil, nil)
 	c.setCallbackData(nil)
 	runtime.KeepAlive(c)
 	return

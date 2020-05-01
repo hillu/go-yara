@@ -35,17 +35,16 @@ import (
 // to Rules (YR_RULES) is that it is possible to set variables in a
 // thread-safe manner (cf.
 // https://github.com/VirusTotal/yara/issues/350).
+//
+// Since this type contains a C pointer to a YR_SCANNER structure that
+// may be automatically freed, it should not be copied.
 type Scanner struct {
-	*scanner
+	cptr *C.YR_SCANNER
 	// The Scanner struct has to hold a pointer to the rules
 	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
 	// current callback object, set by SetCallback
 	cb ScanCallback
-}
-
-type scanner struct {
-	cptr *C.YR_SCANNER
 }
 
 // NewScanner creates a YARA scanner.
@@ -54,25 +53,20 @@ func NewScanner(r *Rules) (*Scanner, error) {
 	if err := newError(C.yr_scanner_create(r.cptr, &yrScanner)); err != nil {
 		return nil, err
 	}
-	s := &Scanner{scanner: &scanner{cptr: yrScanner}, rules: r}
-	runtime.SetFinalizer(s.scanner, (*scanner).finalize)
+	s := &Scanner{cptr: yrScanner, rules: r}
+	runtime.SetFinalizer(s, (*Scanner).Destroy)
 	return s, nil
 }
 
-func (s *scanner) finalize() {
-	C.yr_scanner_destroy(s.cptr)
-	runtime.SetFinalizer(s, nil)
-}
-
 // Destroy destroys the YARA data structure representing a scanner.
-// Since a Finalizer for the underlying YR_SCANNER structure is
-// automatically set up on creation, it should not be necessary to
-// explicitly all this method.
+//
+// It should not be necessary to call this method directly.
 func (s *Scanner) Destroy() {
-	if s.scanner != nil {
-		s.scanner.finalize()
-		s.scanner = nil
+	if s.cptr != nil {
+		C.yr_scanner_destroy(s.cptr)
+		s.cptr = nil
 	}
+	runtime.SetFinalizer(s, nil)
 }
 
 // DefineVariable defines a named variable for use by the scanner.

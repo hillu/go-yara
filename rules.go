@@ -46,13 +46,10 @@ import (
 )
 
 // Rules contains a compiled YARA ruleset.
-type Rules struct {
-	*rules
-}
-
-type rules struct {
-	cptr *C.YR_RULES
-}
+//
+// Since this type contains a C pointer to a YR_RULES structure that
+// may be automatically freed, it should not be copied.
+type Rules struct{ cptr *C.YR_RULES }
 
 var dummy *[]MatchRule
 
@@ -210,14 +207,13 @@ func (r *Rules) Save(filename string) (err error) {
 
 // LoadRules retrieves a compiled ruleset from filename.
 func LoadRules(filename string) (*Rules, error) {
-	r := &Rules{rules: &rules{}}
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	if err := newError(C.yr_rules_load(cfilename,
-		&(r.rules.cptr))); err != nil {
+	r := &Rules{}
+	if err := newError(C.yr_rules_load(cfilename, &(r.cptr))); err != nil {
 		return nil, err
 	}
-	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	runtime.SetFinalizer(r, (*Rules).Destroy)
 	return r, nil
 }
 
@@ -240,7 +236,6 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 
 // ReadRules retrieves a compiled ruleset from an io.Reader.
 func ReadRules(rd io.Reader) (*Rules, error) {
-	r := &Rules{rules: &rules{}}
 	id := callbackData.Put(rd)
 	defer callbackData.Delete(id)
 
@@ -250,28 +245,23 @@ func ReadRules(rd io.Reader) (*Rules, error) {
 		// unsafe.Pointer is wrong, see above.
 		user_data: id,
 	}
-	if err := newError(C.yr_rules_load_stream(&stream,
-		&(r.rules.cptr))); err != nil {
+	r := &Rules{}
+	if err := newError(C.yr_rules_load_stream(&stream, &(r.cptr))); err != nil {
 		return nil, err
 	}
-	runtime.SetFinalizer(r.rules, (*rules).finalize)
+	runtime.SetFinalizer(r, (*Rules).Destroy)
 	return r, nil
 }
 
-func (r *rules) finalize() {
-	C.yr_rules_destroy(r.cptr)
-	runtime.SetFinalizer(r, nil)
-}
-
 // Destroy destroys the YARA data structure representing a ruleset.
-// Since a Finalizer for the underlying YR_RULES structure is
-// automatically set up on creation, it should not be necessary to
-// explicitly call this method.
+//
+// It should not be necessary to call this method directly.
 func (r *Rules) Destroy() {
-	if r.rules != nil {
-		r.rules.finalize()
-		r.rules = nil
+	if r.cptr != nil {
+		C.yr_rules_destroy(r.cptr)
+		r.cptr = nil
 	}
+	runtime.SetFinalizer(r, nil)
 }
 
 // DefineVariable defines a named variable for use by the compiler.

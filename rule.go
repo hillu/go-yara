@@ -94,6 +94,9 @@ import "C"
 import "unsafe"
 
 // Rule represents a single rule as part of a ruleset.
+//
+// Since this type contains a C pointer to a YR_RULE structure that
+// may be automatically freed, it should not be copied.
 type Rule struct{ cptr *C.YR_RULE }
 
 // Identifier returns the rule's name.
@@ -197,6 +200,9 @@ func (r *Rule) IsGlobal() bool {
 }
 
 // String represents a string as part of a rule.
+//
+// Since this type contains a C pointer to a YR_STRING structure that
+// may be automatically freed, it should not be copied.
 type String struct{ cptr *C.YR_STRING }
 
 // Strings returns the rule's strings.
@@ -220,6 +226,9 @@ func (s *String) Identifier() string {
 }
 
 // Match represents a string match.
+//
+// Since this type contains a C pointer to a YR_MATCH structure that
+// may be automatically freed, it should not be copied.
 type Match struct{ cptr *C.YR_MATCH }
 
 // Matches returns all matches that have been recorded for the string.
