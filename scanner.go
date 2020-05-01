@@ -21,7 +21,7 @@ int _yr_scanner_scan_fd(
 #define _yr_scanner_scan_fd yr_scanner_scan_fd
 #endif
 
-int scanCallbackFunc(int, void*, void*);
+int scanCallbackFunc(YR_SCAN_CONTEXT*, int, void*, void*);
 */
 import "C"
 import (
@@ -238,4 +238,22 @@ func (s *Scanner) GetLastErrorString() (r *String) {
 	}
 	runtime.KeepAlive(s)
 	return
+}
+
+type RuleProfilingInfo struct {
+	Rule
+	Cost uint64
+}
+
+// GetProfilingInfo retrieves profiling information from the Scanner.
+func (s *Scanner) GetProfilingInfo() (rpis []RuleProfilingInfo) {
+	for rpi := C.yr_scanner_get_profiling_info(s.cptr); rpi.rule != nil; rpi = (*C.YR_RULE_PROFILING_INFO)(unsafe.Pointer(uintptr(unsafe.Pointer(rpi)) + unsafe.Sizeof(*rpi))) {
+		rpis = append(rpis, RuleProfilingInfo{Rule{rpi.rule}, uint64(rpi.cost)})
+	}
+	return
+}
+
+// ResetProfilingInfo resets the Scanner's profiling information
+func (s *Scanner) ResetProfilingInfo() {
+	C.yr_scanner_reset_profiling_info(s.cptr)
 }

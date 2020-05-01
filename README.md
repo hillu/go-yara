@@ -14,8 +14,8 @@ the `yara-python` implementation.
 
 ### Unix
 
-On a Unix system with _libyara_ 3.11, corresponding header files, and
-_pkg-config_ installed, the following should simply work:
+On a Unix system with libyara_ version 4, corresponding header files,
+and _pkg-config_ installed, the following should simply work:
 
 ```
 go get github.com/hillu/go-yara
@@ -28,13 +28,6 @@ installed by _YARA_'s build system. If _libyara_ has been installed to
 a custom location, the `PKG_CONFIG_PATH` environment variable can be
 used to point _pkg-config_ at the right `yara.pc` file. If
 _pkg-config_ cannot be used at all, please refer to the "Build Tags" section.
-
-Linker errors in the compiler output such as
-
-    undefined reference to `yr_compiler_add_file'
-
-indicate that the linker is probably looking at an old version of
-_libyara_.
 
 ### Cross-building
 
@@ -104,7 +97,7 @@ run _pkg-config_ with the `--static` switch. This is not enough for a
 static build; the appropriate linker flags (e.g. `-extldflags
 "-static"`) still need to be passed to the _go_ tool.
 
-The build tag `no_pkg_config` can be used to tell the Go toolchain not
+The build tag `yara_no_pkg_config` can be used to tell the Go toolchain not
 to use _pkg-config_'s output. In this case, any compiler or linker
 flags have to be set via the `CGO_CFLAGS` and `CGO_LDFLAGS`
 environment variables, e.g.:
@@ -112,7 +105,7 @@ environment variables, e.g.:
 ```
 export CGO_CFLAGS="-I${YARA_SRC}/libyara/include"
 export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
-go install -tags no_pkg_config github.com/hillu/go-yara
+go install -tags yara_no_pkg_config github.com/hillu/go-yara
 ```
 
 ## License

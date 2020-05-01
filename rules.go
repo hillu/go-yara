@@ -34,7 +34,7 @@ int _yr_rules_scan_fd(
 size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);
 
-int scanCallbackFunc(int, void*, void*);
+int scanCallbackFunc(YR_SCAN_CONTEXT*, int, void*, void*);
 */
 import "C"
 import (
@@ -304,8 +304,8 @@ func (r *Rules) GetRules() (rv []Rule) {
 	//     for (rule = rules->rules_list_head; !RULE_IS_NULL(rule); rule++)
 	// #define RULE_IS_NULL(x) \
 	//     (((x)->g_flags) & RULE_GFLAGS_NULL)
-	for p := r.cptr.rules_list_head; p.g_flags&C.RULE_GFLAGS_NULL == 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
-		rv = append(rv, Rule{p})
+	for p := r.cptr.rules_list_head; p.flags&C.RULE_FLAGS_NULL != 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
+		rv = append(rv, Rule{(*C.YR_RULE)(p)})
 	}
 	return
 }

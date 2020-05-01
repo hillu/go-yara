@@ -16,7 +16,7 @@ package yara
 
 #include <yara.h>
 
-void compilerCallback(int, char*, int, char*, void*);
+void compilerCallback(int, char*, int, YR_RULE*, char*, void*);
 char* includeCallback(char*, char*, char*, void*);
 void freeCallback(char*, void*);
 */
@@ -30,7 +30,7 @@ import (
 )
 
 //export compilerCallback
-func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, message *C.char, userData unsafe.Pointer) {
+func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, rule *C.YR_RULE, message *C.char, userData unsafe.Pointer) {
 	c := callbackData.Get(userData).(*Compiler)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),

@@ -52,7 +52,7 @@ static void rule_metas(YR_RULE* r, const YR_META *metas[], int *n) {
 // generated using the DECLARE_REFERENCE macro.
 static void meta_get(YR_META *m, const char** identifier, char** string) {
 	*identifier = m->identifier;
-	*string = m->string;
+	*string = (char*)m->string;
 	return;
 }
 
@@ -77,10 +77,10 @@ static const char* string_identifier(YR_STRING* s) {
 
 // string_matches returns pointers to the string match objects
 // associated with a string, using YARA's macro-based implementation.
-static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
+static void string_matches(YR_SCAN_CONTEXT *ctx, YR_STRING* s, const YR_MATCH *matches[], int *n) {
 	const YR_MATCH *match;
 	int i = 0;
-	yr_string_matches_foreach(s, match) {
+	yr_string_matches_foreach(ctx, s, match) {
 		if (i < *n)
 			matches[i] = match;
 		i++;
@@ -147,8 +147,6 @@ func (r *Rule) MetaList() (metas []Meta) {
 		id := C.GoString(cid)
 		var val interface{}
 		switch cptr._type {
-		case C.META_TYPE_NULL:
-			val = nil
 		case C.META_TYPE_STRING:
 			val = C.GoString(cstr)
 		case C.META_TYPE_INTEGER:
@@ -191,12 +189,12 @@ func (r *Rule) Metas() (metas map[string]interface{}) {
 
 // IsPrivate returns true if the rule is marked as private.
 func (r *Rule) IsPrivate() bool {
-	return (r.cptr.g_flags & C.RULE_GFLAGS_PRIVATE) != 0
+	return r.cptr.flags&C.RULE_FLAGS_PRIVATE != 0
 }
 
 // IsGlobal returns true if the rule is marked as global.
 func (r *Rule) IsGlobal() bool {
-	return (r.cptr.g_flags & C.RULE_GFLAGS_GLOBAL) != 0
+	return r.cptr.flags&C.RULE_FLAGS_GLOBAL != 0
 }
 
 // String represents a string as part of a rule.
@@ -232,14 +230,17 @@ func (s *String) Identifier() string {
 type Match struct{ cptr *C.YR_MATCH }
 
 // Matches returns all matches that have been recorded for the string.
-func (s *String) Matches() (matches []Match) {
+func (s *String) Matches(sc *ScanContext) (matches []Match) {
+	if sc == nil || sc.cptr == nil {
+		return
+	}
 	var size C.int
-	C.string_matches(s.cptr, nil, &size)
+	C.string_matches(sc.cptr, s.cptr, nil, &size)
 	ptrs := make([]*C.YR_MATCH, int(size))
 	if size == 0 {
 		return
 	}
-	C.string_matches(s.cptr, &ptrs[0], &size)
+	C.string_matches(sc.cptr, s.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
 		matches = append(matches, Match{ptr})
 	}
@@ -262,9 +263,9 @@ func (m *Match) Data() []byte {
 	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
 }
 
-func (r *Rule) getMatchStrings() (matchstrings []MatchString) {
+func (r *Rule) getMatchStrings(sc *ScanContext) (matchstrings []MatchString) {
 	for _, s := range r.Strings() {
-		for _, m := range s.Matches() {
+		for _, m := range s.Matches(sc) {
 			matchstrings = append(matchstrings, MatchString{
 				Name:   s.Identifier(),
 				Base:   uint64(m.Base()),

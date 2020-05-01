@@ -281,22 +281,22 @@ func newTestCallback(t *testing.T) *testCallback {
 	}
 }
 
-func (c *testCallback) RuleMatching(r *Rule) (bool, error) {
+func (c *testCallback) RuleMatching(_ *ScanContext, r *Rule) (bool, error) {
 	c.t.Logf("RuleMatching callback called: rule=%s", r.Identifier())
 	c.matched[r.Identifier()] = struct{}{}
 	return false, nil
 }
-func (c *testCallback) RuleNotMatching(r *Rule) (bool, error) {
+func (c *testCallback) RuleNotMatching(_ *ScanContext, r *Rule) (bool, error) {
 	c.t.Logf("RuleNotMatching callback called: rule=%s", r.Identifier())
 	c.notMatched[r.Identifier()] = struct{}{}
 	return false, nil
 }
-func (c *testCallback) ScanFinished() (bool, error) {
+func (c *testCallback) ScanFinished(*ScanContext) (bool, error) {
 	c.t.Log("ScanFinished callback called")
 	c.finished = true
 	return false, nil
 }
-func (c *testCallback) ImportModule(s string) ([]byte, bool, error) {
+func (c *testCallback) ImportModule(_ *ScanContext, s string) ([]byte, bool, error) {
 	c.t.Logf("ImportModule callback called: module=%s", s)
 	c.modules[s] = struct{}{}
 	if s == "tests" {
@@ -304,7 +304,7 @@ func (c *testCallback) ImportModule(s string) ([]byte, bool, error) {
 	}
 	return nil, false, nil
 }
-func (c *testCallback) ModuleImported(*Object) (bool, error) {
+func (c *testCallback) ModuleImported(*ScanContext, *Object) (bool, error) {
 	c.t.Log("ModuleImported callback called")
 	return false, nil
 }

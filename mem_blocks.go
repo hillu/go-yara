@@ -12,7 +12,6 @@ package yara
 
 // This function was published in the header file after YARA 3.11, see
 // https://github.com/VirusTotal/yara/pull/1244
-#if YR_MAJOR_VERSION == 3 && YR_MINOR_VERSION < 12
 YR_API int yr_rules_scan_mem_blocks(
     YR_RULES* rules,
     YR_MEMORY_BLOCK_ITERATOR* iterator,
@@ -20,9 +19,8 @@ YR_API int yr_rules_scan_mem_blocks(
     YR_CALLBACK_FUNC callback,
     void* user_data,
     int timeout);
-#endif
 
-int scanCallbackFunc(int, void*, void*);
+int scanCallbackFunc(YR_SCAN_CONTEXT*, int, void*, void*);
 
 uint8_t* memoryBlockFetch(YR_MEMORY_BLOCK*);
 uint8_t* memoryBlockFetchNull(YR_MEMORY_BLOCK*);

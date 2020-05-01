@@ -6,13 +6,13 @@
 
 package yara
 
-// #cgo !no_pkg_config,!yara_static  pkg-config: yara
-// #cgo !no_pkg_config,yara_static   pkg-config: --static yara
-// #cgo no_pkg_config                LDFLAGS:    -lyara
+// #cgo !yara_no_pkg_config,!yara_static  pkg-config: yara
+// #cgo !yara_no_pkg_config,yara_static   pkg-config: --static yara
+// #cgo yara_no_pkg_config                LDFLAGS:    -lyara
 /*
 #include <yara.h>
-#if YR_VERSION_HEX < 0x030b00 || YR_VERSION_HEX > 0x040000
-#error YARA3 (>= 3.11) required
+#if YR_MAJOR_VERSION != 4
+#error YARA version 4 required
 #endif
 */
 import "C"
