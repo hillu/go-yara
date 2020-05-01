@@ -9,7 +9,7 @@ go:
  - 1.13.x
  - 1.14.x
  - tip
-gobuild_args: -tags no_pkg_config
+gobuild_args: -tags yara_no_pkg_config
 dist: xenial
 addons:
   apt:
