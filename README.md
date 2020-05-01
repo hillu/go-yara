@@ -14,9 +14,8 @@ the `yara-python` implementation.
 
 ### Unix
 
-On a Unix system with _libyara_, its header files, and _pkg-config_
-installed, the following should simply work, provided that `GOPATH` is
-set:
+On a Unix system with _libyara_ 3.11, corresponding header files, and
+_pkg-config_ installed, the following should simply work:
 
 ```
 go get github.com/hillu/go-yara
@@ -35,8 +34,7 @@ Linker errors in the compiler output such as
     undefined reference to `yr_compiler_add_file'
 
 indicate that the linker is probably looking at an old version of
-_libyara_. Please refer to the "Build Tags" section below on how to
-work with old YARA versions.
+_libyara_.
 
 ### Cross-building
 
@@ -91,15 +89,6 @@ $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
 ```
 
 ## Build Tags
-
-_go-yara_ is tested with the latest stable version of YARA, currently
-3.11. If you need to to build with an older version of YARA, certain
-features that are not present in older versions can be excluded by
-passing a build tag such as `yara3.7`, `yara3.6`, `yara3.5`, etc.. If
-you want to build with a git snapshot of YARA, you may use a build tag
-corresponding to the upcoming stable YARA version, currently
-`yara3.9`. You also need to pass the tag when you build your own
-project.
 
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch. This is not enough for a

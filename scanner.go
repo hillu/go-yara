@@ -4,8 +4,6 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-// +build !yara3.3,!yara3.4,!yara3.5,!yara3.6,!yara3.7
-
 package yara
 
 /*
@@ -224,7 +222,7 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 	return
 }
 
-// GetLastErrorRule returns the Rule which caused the last error
+// GetLastErrorRule returns the Rule which caused the last error.
 //
 // The result is nil, if scanner returned no rule
 func (s *Scanner) GetLastErrorRule() (r *Rule) {
@@ -236,7 +234,7 @@ func (s *Scanner) GetLastErrorRule() (r *Rule) {
 	return
 }
 
-// GetLastErrorString returns the String which caused the last error
+// GetLastErrorString returns the String which caused the last error.
 //
 // The result is nil, if scanner returned no string
 func (s *Scanner) GetLastErrorString() (r *String) {

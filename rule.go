@@ -91,6 +91,7 @@ static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
 
 */
 import "C"
+import "unsafe"
 
 // Rule represents a single rule as part of a ruleset.
 type Rule struct{ cptr *C.YR_RULE }
@@ -247,6 +248,11 @@ func (m *Match) Offset() int64 {
 	return int64(m.cptr.offset)
 }
 
+// Data returns the blob of data associated with the string match.
+func (m *Match) Data() []byte {
+	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
+}
+
 func (r *Rule) getMatchStrings() (matchstrings []MatchString) {
 	for _, s := range r.Strings() {
 		for _, m := range s.Matches() {
@@ -259,4 +265,14 @@ func (r *Rule) getMatchStrings() (matchstrings []MatchString) {
 		}
 	}
 	return
+}
+
+// Enable enables a single rule.
+func (r *Rule) Enable() {
+	C.yr_rule_enable(r.cptr)
+}
+
+// Disable disables a single rule.
+func (r *Rule) Disable() {
+	C.yr_rule_disable(r.cptr)
 }

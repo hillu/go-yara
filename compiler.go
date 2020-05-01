@@ -17,10 +17,14 @@ package yara
 #include <yara.h>
 
 void compilerCallback(int, char*, int, char*, void*);
+char* includeCallback(char*, char*, char*, void*);
+void freeCallback(char*, void*);
 */
 import "C"
 import (
 	"errors"
+	"os"
+	"reflect"
 	"runtime"
 	"unsafe"
 )
@@ -99,6 +103,36 @@ func (c *Compiler) Destroy() {
 	}
 }
 
+// AddFile compiles rules from a file. Rules are added to the
+// specified namespace.
+//
+// If this function returns an error, the Compiler object will become
+// unusable.
+func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
+	if c.cptr.errors != 0 {
+		return errors.New("Compiler cannot be used after parse error")
+	}
+	var ns *C.char
+	if namespace != "" {
+		ns = C.CString(namespace)
+		defer C.free(unsafe.Pointer(ns))
+	}
+	filename := C.CString(file.Name())
+	defer C.free(unsafe.Pointer(filename))
+	id := callbackData.Put(c)
+	defer callbackData.Delete(id)
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), id)
+	numErrors := int(C.yr_compiler_add_fd(c.cptr, (C.YR_FILE_DESCRIPTOR)(file.Fd()), ns, filename))
+	if numErrors > 0 {
+		var buf [1024]C.char
+		msg := C.GoString(C.yr_compiler_get_error_message(
+			c.cptr, (*C.char)(unsafe.Pointer(&buf[0])), 1024))
+		err = errors.New(msg)
+	}
+	runtime.KeepAlive(c)
+	return
+}
+
 // AddString compiles rules from a string. Rules are added to the
 // specified namespace.
 //
@@ -174,6 +208,76 @@ func (c *Compiler) GetRules() (*Rules, error) {
 	runtime.SetFinalizer(r.rules, (*rules).finalize)
 	runtime.KeepAlive(c)
 	return r, nil
+}
+
+//export includeCallback
+func includeCallback(name, filename, namespace *C.char, userData unsafe.Pointer) *C.char {
+	callbackFunc := callbackData.Get(userData).(CompilerIncludeFunc)
+	if buf := callbackFunc(
+		C.GoString(name), C.GoString(filename), C.GoString(namespace),
+	); buf != nil {
+		ptr := C.calloc(1, C.size_t(len(buf)+1))
+		if ptr == nil {
+			return nil
+		}
+		outbuf := make([]byte, 0)
+		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&outbuf))
+		hdr.Data, hdr.Len = uintptr(ptr), len(buf)+1
+		copy(outbuf, buf)
+		return (*C.char)(ptr)
+	}
+	return nil
+}
+
+//export freeCallback
+func freeCallback(callbackResultPtr *C.char, userData unsafe.Pointer) {
+	if callbackResultPtr != nil {
+		C.free(unsafe.Pointer(callbackResultPtr))
+	}
+	return
+}
+
+// CompilerIncludeFunc is the type of the function that can be
+// registered through SetIncludeCallback. It is called for every
+// include statement encountered by the compiler. The argument "name"
+// specifies the rule file to be included, "filename" specifies the
+// name of the rule file where the include statement has been
+// encountered, and "namespace" specifies the rule namespace. The sole
+// return value is a byte slice containing the contents of the
+// included file. A return value of nil signals an error to the YARA
+// compiler.
+//
+// See also: yr_compiler_set_include_callback in the YARA C API
+// documentation.
+type CompilerIncludeFunc func(name, filename, namespace string) []byte
+
+// SetIncludeCallback sets up cb as an include callback that is called
+// (through Go glue code) by the YARA compiler for every include
+// statement.
+func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
+	if cb == nil {
+		c.DisableIncludes()
+		return
+	}
+	id := callbackData.Put(cb)
+	c.setCallbackData(id)
+	C.yr_compiler_set_include_callback(
+		c.compiler.cptr,
+		C.YR_COMPILER_INCLUDE_CALLBACK_FUNC(C.includeCallback),
+		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
+		id,
+	)
+	runtime.KeepAlive(c)
+	return
+}
+
+// DisableIncludes disables all include statements in the compiler.
+// See yr_compiler_set_include_callbacks.
+func (c *Compiler) DisableIncludes() {
+	C.yr_compiler_set_include_callback(c.compiler.cptr, nil, nil, nil)
+	c.setCallbackData(nil)
+	runtime.KeepAlive(c)
+	return
 }
 
 // Compile compiles rules and an (optional) set of variables into a

@@ -3,8 +3,6 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-// +build !yara3.3,!yara3.4
-
 package yara
 
 // #include <yara.h>
@@ -13,7 +11,11 @@ import "unsafe"
 
 type ConfigName uint32
 
-const ConfigStackSize ConfigName = C.YR_CONFIG_STACK_SIZE
+const (
+	ConfigStackSize         ConfigName = C.YR_CONFIG_STACK_SIZE
+	ConfigMaxMatchData                 = C.YR_CONFIG_MAX_MATCH_DATA
+	ConfigMaxStringsPerRule            = C.YR_CONFIG_MAX_STRINGS_PER_RULE
+)
 
 // SetConfiguration sets a global YARA configuration option.
 func SetConfiguration(name ConfigName, src interface{}) error {
