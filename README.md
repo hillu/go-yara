@@ -88,6 +88,15 @@ $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
   go install -ldflags '-extldflags "-static"' github.com/hillu/go-yara
 ```
 
+## YARA 3.x vs. YARA 4.x
+
+The release of YARA 4.0.0 introduces some API incompatibilities,
+therefore I have decided to break compatibility with YARA 3.x for the
+4.0.0 release of _go-yara_ which lives on the `master` branch.
+
+Versions of _go-yara_ compatible with YARA 3.x (>= 3.11) live on the
+`v3.x` branch.
+
 ## Build Tags
 
 The build tag `yara_static` can be used to tell the Go toolchain to
