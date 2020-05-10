@@ -4,7 +4,6 @@
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
-// Package yara provides bindings to the YARA library.
 package yara
 
 /*
