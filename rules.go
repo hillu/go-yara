@@ -51,8 +51,6 @@ import (
 // may be automatically freed, it should not be copied.
 type Rules struct{ cptr *C.YR_RULES }
 
-var dummy *[]MatchRule
-
 // A MatchRule represents a rule successfully matched against a block
 // of data.
 type MatchRule struct {
