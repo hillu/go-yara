@@ -131,9 +131,9 @@ type Meta struct {
 	Value      interface{}
 }
 
-// MetaList returns the rule's meta variables as a list of Meta
-// objects. It does not share the limitation of Metas().
-func (r *Rule) MetaList() (metas []Meta) {
+// Metas returns the rule's meta variables as a list of Meta
+// objects.
+func (r *Rule) Metas() (metas []Meta) {
 	var size C.int
 	C.rule_metas(r.cptr, nil, &size)
 	if size == 0 {
@@ -155,34 +155,6 @@ func (r *Rule) MetaList() (metas []Meta) {
 			val = (cptr.integer != 0)
 		}
 		metas = append(metas, Meta{id, val})
-	}
-	return
-}
-
-// MetaMap returns a map containing the rule's meta variables, with
-// the variable names as keys. Values are collected into lists, this
-// allows for multiple variables with the same; individual values can
-// be of type string, int, bool, or nil.
-func (r *Rule) MetaMap() (metas map[string][]interface{}) {
-	metas = make(map[string][]interface{})
-	for _, m := range r.MetaList() {
-		metas[m.Identifier] = append(metas[m.Identifier], m.Value)
-	}
-	return
-}
-
-// Metas returns a map containing the rule's meta variables, with the
-// variable names as keys. Values can be of type string, int, bool, or
-// nil.
-//
-// Deprecated: If there are multiple meta variables with the same
-// name, the returned map contains only the last variable.
-//
-// Use MetaList or MetaMap instead.
-func (r *Rule) Metas() (metas map[string]interface{}) {
-	metas = make(map[string]interface{})
-	for _, m := range r.MetaList() {
-		metas[m.Identifier] = m.Value
 	}
 	return
 }

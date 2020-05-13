@@ -220,28 +220,28 @@ func TestRule(t *testing.T) {
 			if !reflect.DeepEqual(r.Tags(), []string{"tag1"}) {
 				t.Error("Got wrong tags for t1")
 			}
-			if !reflect.DeepEqual(r.Metas(), map[string]interface{}{"author": "Author One"}) {
+			if !reflect.DeepEqual(r.Metas(), Meta{"author", "Author One"}) {
 				t.Error("Got wrong meta variables for t1")
 			}
 		case "t2":
 			if !reflect.DeepEqual(r.Tags(), []string{"tag2", "x", "y"}) {
 				t.Error("Got wrong tags for t2")
 			}
-			if !reflect.DeepEqual(r.Metas(), map[string]interface{}{"author": "Author Two"}) {
+			if !reflect.DeepEqual(r.Metas(), Meta{"author", "Author Two"}) {
 				t.Error("Got wrong meta variables for t2")
 			}
 		case "t3":
 			if !reflect.DeepEqual(r.Tags(), []string{"tag3", "x", "y", "z"}) {
 				t.Error("Got wrong tags for t3")
 			}
-			if !reflect.DeepEqual(r.Metas(), map[string]interface{}{"author": "Author Three"}) {
+			if !reflect.DeepEqual(r.Metas(), Meta{"author", "Author Three"}) {
 				t.Error("Got wrong meta variables for t3")
 			}
 		case "t4":
 			if len(r.Tags()) != 0 {
 				t.Error("Got tags for t4")
 			}
-			if !reflect.DeepEqual(r.Metas(), map[string]interface{}{}) {
+			if !reflect.DeepEqual(r.Metas(), Meta{}) {
 				t.Error("Got wrong meta variables for t4")
 			}
 			if r.IsPrivate() {

@@ -56,7 +56,7 @@ type MatchRule struct {
 	Rule      string
 	Namespace string
 	Tags      []string
-	Meta      map[string]interface{}
+	Metas     []Meta
 	Strings   []MatchString
 }
 
