@@ -1,9 +1,10 @@
-// Copyright © 2015-2019 Hilko Bengen <bengen@hilluzination.de>
+// Copyright © 2015-2020 Hilko Bengen <bengen@hilluzination.de>
 // All rights reserved.
 //
 // Use of this source code is governed by the license that can be
 // found in the LICENSE file.
 
+// Package yara provides bindings to the YARA library.
 package yara
 
 /*
