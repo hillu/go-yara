@@ -95,11 +95,8 @@ $ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
 _go-yara_ is tested with the latest stable version of YARA, currently
 3.11. If you need to to build with an older version of YARA, certain
 features that are not present in older versions can be excluded by
-passing a build tag such as `yara3.7`, `yara3.6`, `yara3.5`, etc.. If
-you want to build with a git snapshot of YARA, you may use a build tag
-corresponding to the upcoming stable YARA version, currently
-`yara3.9`. You also need to pass the tag when you build your own
-project.
+passing a build tag such as `yara3.7`, `yara3.6`, `yara3.5`, etc.. You
+also need to pass the tag when you build your own project.
 
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch. This is not enough for a
