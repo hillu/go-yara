@@ -28,12 +28,10 @@ type ScanContext struct {
 // ScanCallback is a placeholder for different interfaces that may be
 // implemented by the callback object that is passed to the
 // (*Rules).Scan*WithCallback and (*Scanner).Scan methods.
-type ScanCallback interface{}
-
-// ScanCallbackMatch is used to record rules that matched during a
-// scan. The RuleMatching method corresponds to YARA's
+//
+// The RuleMatching method corresponds to YARA's
 // CALLBACK_MSG_RULE_MATCHING message.
-type ScanCallbackMatch interface {
+type ScanCallback interface {
 	RuleMatching(*ScanContext, *Rule) (bool, error)
 }
 
@@ -107,14 +105,10 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 	var err error
 	switch message {
 	case C.CALLBACK_MSG_RULE_MATCHING:
-		if c, ok := cbc.ScanCallback.(ScanCallbackMatch); ok {
-			r := (*C.YR_RULE)(messageData)
-			abort, err = c.RuleMatching(s, &Rule{r})
-		}
+		abort, err = cbc.ScanCallback.RuleMatching(s, &Rule{(*C.YR_RULE)(messageData)})
 	case C.CALLBACK_MSG_RULE_NOT_MATCHING:
 		if c, ok := cbc.ScanCallback.(ScanCallbackNoMatch); ok {
-			r := (*C.YR_RULE)(messageData)
-			abort, err = c.RuleNotMatching(s, &Rule{r})
+			abort, err = c.RuleNotMatching(s, &Rule{(*C.YR_RULE)(messageData)})
 		}
 	case C.CALLBACK_MSG_SCAN_FINISHED:
 		if c, ok := cbc.ScanCallback.(ScanCallbackFinished); ok {
@@ -137,8 +131,7 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 		}
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
 		if c, ok := cbc.ScanCallback.(ScanCallbackModuleImportFinished); ok {
-			obj := (*C.YR_OBJECT)(messageData)
-			abort, err = c.ModuleImported(s, &Object{obj})
+			abort, err = c.ModuleImported(s, &Object{(*C.YR_OBJECT)(messageData)})
 		}
 	}
 
