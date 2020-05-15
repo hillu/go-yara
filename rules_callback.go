@@ -101,6 +101,9 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 	if !ok {
 		return C.CALLBACK_ERROR
 	}
+	if cbc.ScanCallback == nil {
+		return C.CALLBACK_CONTINUE
+	}
 	var abort bool
 	var err error
 	switch message {
