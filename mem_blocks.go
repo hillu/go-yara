@@ -9,16 +9,6 @@ package yara
 /*
 #include <yara.h>
 
-// This function was published in the header file after YARA 3.11, see
-// https://github.com/VirusTotal/yara/pull/1244
-YR_API int yr_rules_scan_mem_blocks(
-    YR_RULES* rules,
-    YR_MEMORY_BLOCK_ITERATOR* iterator,
-    int flags,
-    YR_CALLBACK_FUNC callback,
-    void* user_data,
-    int timeout);
-
 int scanCallbackFunc(YR_SCAN_CONTEXT*, int, void*, void*);
 
 uint8_t* memoryBlockFetch(YR_MEMORY_BLOCK*);
