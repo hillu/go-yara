@@ -193,6 +193,36 @@ func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Dura
 	return
 }
 
+// ScahMemBlocks scans over a MemoryBlockIterator using the ruleset,
+// returning matches via a list of MatchRule objects..
+func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
+	cb := MatchRules{}
+	err = r.ScanMemBlocksWithCallback(mbi, flags, timeout, &cb)
+	matches = cb
+	return
+}
+
+// ScanMemBlocksWithCallback scans over a MemoryBlockIterator using
+// the ruleset. For every event emitted by libyara, the appropriate
+// method on the ScanCallback object is called.
+func (r *Rules) ScanMemBlocksWithCallback(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+	c := makeMemoryBlockIteratorContainer(mbi)
+	defer c.free()
+	cmbi := makeCMemoryBlockIterator(c)
+	defer callbackData.Delete(cmbi.context)
+	id := callbackData.Put(makeScanCallbackContainer(cb))
+	defer callbackData.Delete(id)
+	err = newError(C.yr_rules_scan_mem_blocks(
+		r.cptr,
+		cmbi,
+		C.int(flags),
+		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
+		id,
+		C.int(timeout/time.Second)))
+	runtime.KeepAlive(r)
+	return
+}
+
 // Save writes a compiled ruleset to filename.
 func (r *Rules) Save(filename string) (err error) {
 	cfilename := C.CString(filename)

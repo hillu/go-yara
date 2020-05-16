@@ -216,6 +216,28 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 	return
 }
 
+// ScahMemBlocks scans over a MemoryBlockIterator using the scanner.
+//
+// If a callback object has been set for the scanner using
+// SetCAllback, matches is nil and the callback object is used instead
+// to collect scan events.
+func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator, cb ScanCallback) (matches []MatchRule, err error) {
+	c := makeMemoryBlockIteratorContainer(mbi)
+	defer c.free()
+	cmbi := makeCMemoryBlockIterator(c)
+	defer callbackData.Delete(cmbi.context)
+
+	cbPtr := s.putCallbackData(&matches)
+	defer callbackData.Delete(cbPtr)
+
+	err = newError(C.yr_scanner_scan_mem_blocks(
+		s.cptr,
+		cmbi,
+	))
+	runtime.KeepAlive(s)
+	return
+}
+
 // GetLastErrorRule returns the Rule which caused the last error.
 //
 // The result is nil, if scanner returned no rule

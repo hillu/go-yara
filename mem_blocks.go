@@ -20,8 +20,6 @@ YR_MEMORY_BLOCK* memoryBlockIteratorNext(YR_MEMORY_BLOCK_ITERATOR*);
 import "C"
 import (
 	"reflect"
-	"runtime"
-	"time"
 	"unsafe"
 )
 
@@ -56,6 +54,16 @@ func makeMemoryBlockIteratorContainer(mbi MemoryBlockIterator) (c *memoryBlockIt
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&c.buf))
 	hdr.Data = 0
 	return
+}
+
+// The caller is responsible to remove cmbi.context from callbackData
+// pool.
+func makeCMemoryBlockIterator(c *memoryBlockIteratorContainer) (cmbi *C.YR_MEMORY_BLOCK_ITERATOR) {
+	return &C.YR_MEMORY_BLOCK_ITERATOR{
+		context: callbackData.Put(c),
+		first:   C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
+		next:    C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
+	}
 }
 
 func (c *memoryBlockIteratorContainer) realloc(size int) {
@@ -127,65 +135,4 @@ func memoryBlockIteratorNext(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOC
 	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)
 	c.MemoryBlock = c.MemoryBlockIterator.Next()
 	return memoryBlockIteratorCommon(cmbi, c)
-}
-
-// ScahMemBlocks scans over a MemoryBlockIterator using the ruleset,
-// returning matches via a list of MatchRule objects..
-func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanMemBlocksWithCallback(mbi, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanMemBlocksWithCallback scans over a MemoryBlockIterator using
-// the ruleset. For every event emitted by libyara, the appropriate
-// method on the ScanCallback object is called.
-func (r *Rules) ScanMemBlocksWithCallback(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	c := makeMemoryBlockIteratorContainer(mbi)
-	defer c.free()
-	cmbi := &C.YR_MEMORY_BLOCK_ITERATOR{
-		context: callbackData.Put(c),
-		first:   C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
-		next:    C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
-	}
-	defer callbackData.Delete(cmbi.context)
-	id := callbackData.Put(makeScanCallbackContainer(cb))
-	defer callbackData.Delete(id)
-	err = newError(C.yr_rules_scan_mem_blocks(
-		r.cptr,
-		cmbi,
-		C.int(flags),
-		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		id,
-		C.int(timeout/time.Second)))
-	runtime.KeepAlive(r)
-	return
-}
-
-// ScahMemBlocks scans over a MemoryBlockIterator using the scanner.
-//
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator, cb ScanCallback) (matches []MatchRule, err error) {
-	c := makeMemoryBlockIteratorContainer(mbi)
-	defer c.free()
-
-	cmbi := &C.YR_MEMORY_BLOCK_ITERATOR{
-		context: callbackData.Put(c),
-		first:   C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
-		next:    C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
-	}
-	defer callbackData.Delete(cmbi.context)
-
-	cbPtr := s.putCallbackData(&matches)
-	defer callbackData.Delete(cbPtr)
-
-	err = newError(C.yr_scanner_scan_mem_blocks(
-		s.cptr,
-		cmbi,
-	))
-	runtime.KeepAlive(s)
-	return
 }
