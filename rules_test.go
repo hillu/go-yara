@@ -36,7 +36,8 @@ func makeRules(t *testing.T, rule string) *Rules {
 func TestSimpleMatch(t *testing.T) {
 	r := makeRules(t,
 		"rule test : tag1 { meta: author = \"Hilko Bengen\" strings: $a = \"abc\" fullword condition: $a }")
-	m, err := r.ScanMem([]byte(" abc "), 0, 0)
+	var m MatchRules
+	err := r.ScanMem([]byte(" abc "), 0, 0, &m)
 	if err != nil {
 		t.Errorf("ScanMem: %s", err)
 	}
@@ -51,7 +52,8 @@ func TestSimpleFileMatch(t *testing.T) {
 	defer os.Remove(tf.Name())
 	tf.Write([]byte(" abc "))
 	tf.Close()
-	m, err := r.ScanFile(tf.Name(), 0, 0)
+	var m MatchRules
+	err := r.ScanFile(tf.Name(), 0, 0, &m)
 	if err != nil {
 		t.Errorf("ScanFile(%s): %s", tf.Name(), err)
 	}
@@ -66,23 +68,25 @@ func TestSimpleFileDescriptorMatch(t *testing.T) {
 	defer os.Remove(tf.Name())
 	tf.Write([]byte(" abc "))
 	tf.Seek(0, os.SEEK_SET)
-	m, err := r.ScanFileDescriptor(tf.Fd(), 0, 0)
+	var m MatchRules
+	err := r.ScanFileDescriptor(tf.Fd(), 0, 0, &m)
 	if err != nil {
-		t.Errorf("ScanFile(%s): %s", tf.Name(), err)
+		t.Errorf("ScanFileDescriptor(%s): %s", tf.Name(), err)
 	}
 	t.Logf("Matches: %+v", m)
 }
 
 func TestEmpty(t *testing.T) {
 	r, _ := Compile("rule test { condition: true }", nil)
-	r.ScanMem([]byte{}, 0, 0)
+	r.ScanMem([]byte{}, 0, 0, nil)
 	t.Log("Scan of null-byte slice did not crash. Yay.")
 }
 
 func assertTrueRules(t *testing.T, rules []string, data []byte) {
 	for _, rule := range rules {
 		r := makeRules(t, rule)
-		if m, err := r.ScanMem(data, 0, 0); len(m) == 0 {
+		var m MatchRules
+		if err := r.ScanMem(data, 0, 0, &m); len(m) == 0 {
 			t.Errorf("Rule < %s > did not match data < %v >", rule, data)
 		} else if err != nil {
 			t.Errorf("Error %s", err)
@@ -93,7 +97,8 @@ func assertTrueRules(t *testing.T, rules []string, data []byte) {
 func assertFalseRules(t *testing.T, rules []string, data []byte) {
 	for _, rule := range rules {
 		r := makeRules(t, rule)
-		if m, err := r.ScanMem(data, 0, 0); len(m) > 0 {
+		var m MatchRules
+		if err := r.ScanMem(data, 0, 0, &m); len(m) > 0 {
 			t.Errorf("Rule < %s > matched data < %v >", rule, data)
 		} else if err != nil {
 			t.Errorf("Error %s", err)
@@ -117,8 +122,8 @@ func TestReader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadRules: %+v", err)
 	}
-	m, err := r.ScanMem([]byte(" abc "), 0, 0)
-	if err != nil {
+	var m MatchRules
+	if err := r.ScanMem([]byte(" abc "), 0, 0, &m); err != nil {
 		t.Errorf("ScanMem: %s", err)
 	}
 	t.Logf("Matches: %+v", m)
@@ -198,7 +203,7 @@ func TestScanMemCgoPointer(t *testing.T) {
 	buf.Write([]byte(" abc "))
 	if err := func() (p interface{}) {
 		defer func() { p = recover() }()
-		r.ScanMem(buf.Bytes(), 0, 0)
+		r.ScanMem(buf.Bytes(), 0, 0, nil)
 		return nil
 	}(); err != nil {
 		t.Errorf("ScanMem panicked: %s", err)
@@ -325,7 +330,7 @@ func TestImportDataCallback(t *testing.T) {
 		rule t3 {
 			condition: tests.module_data == "callback-data-for-tests-module"
 		}`)
-	if err := r.ScanMemWithCallback([]byte(""), 0, 0, cb); err != nil {
+	if err := r.ScanMem([]byte(""), 0, 0, cb); err != nil {
 		t.Error(err)
 	}
 	for _, module := range []string{"tests", "pe"} {

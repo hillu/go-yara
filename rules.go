@@ -81,25 +81,15 @@ const (
 	ScanFlagsProcessMemory = C.SCAN_FLAGS_PROCESS_MEMORY
 )
 
-// ScanMem scans an in-memory buffer using the ruleset, returning
-// matches via a list of MatchRule objects.
-func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanMemWithCallback(buf, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanMemWithCallback scans an in-memory buffer using the ruleset.
-// For every event emitted by libyara, the appropriate method on the
+// ScanMem scans an in-memory buffer using the ruleset.
+// For every event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
-func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	cbc := makeScanCallbackContainer(cb)
-	id := callbackData.Put(cbc)
+	id := callbackData.Put(makeScanCallbackContainer(cb))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
@@ -113,19 +103,10 @@ func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Du
 	return
 }
 
-// ScanFile scans a file using the ruleset, returning matches via a
-// list of MatchRule objects.
-func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanFileWithCallback(filename, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanFileWithCallback scans a file using the ruleset. For every
-// event emitted by libyara, the appropriate method on the
+// ScanFile scans a file using the ruleset. For every
+// event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
-func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 	id := callbackData.Put(makeScanCallbackContainer(cb))
@@ -141,19 +122,10 @@ func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout t
 	return
 }
 
-// ScanFileDescriptor scans a file using the ruleset, returning
-// matches via a list of MatchRule objects.
-func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanFileDescriptorWithCallback(fd, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanFileDescriptorWithCallback scans a file using the ruleset. For every event
-// emitted by libyara, the appropriate method on the ScanCallback
+// ScanFileDescriptor scans a file using the ruleset. For every event
+// emitted by libyara, the corresponding method on the ScanCallback
 // object is called.
-func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	id := callbackData.Put(makeScanCallbackContainer(cb))
 	defer callbackData.Delete(id)
 	err = newError(C._yr_rules_scan_fd(
@@ -167,19 +139,10 @@ func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, time
 	return
 }
 
-// ScanProc scans a live process using the ruleset, returning matches
-// via a list of MatchRule objects.
-func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanProcWithCallback(pid, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanProcWithCallback scans a live process using the ruleset.  For
-// every event emitted by libyara, the appropriate method on the
+// ScanProc scans a live process using the ruleset.  For
+// every event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
-func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	id := callbackData.Put(makeScanCallbackContainer(cb))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
@@ -193,19 +156,10 @@ func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Dura
 	return
 }
 
-// ScahMemBlocks scans over a MemoryBlockIterator using the ruleset,
-// returning matches via a list of MatchRule objects..
-func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error) {
-	cb := MatchRules{}
-	err = r.ScanMemBlocksWithCallback(mbi, flags, timeout, &cb)
-	matches = cb
-	return
-}
-
-// ScanMemBlocksWithCallback scans over a MemoryBlockIterator using
-// the ruleset. For every event emitted by libyara, the appropriate
-// method on the ScanCallback object is called.
-func (r *Rules) ScanMemBlocksWithCallback(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
+// ScanMemBlocks scans over a MemoryBlockIterator using the ruleset.
+// For every event emitted by libyara, the corresponding method on the
+// ScanCallback object is called.
+func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)

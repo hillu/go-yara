@@ -83,7 +83,8 @@ rule B {
 }
 	`, nil)
 
-	mrs, err := rs.ScanMemBlocks(it, 0, 0)
+	var mrs yara.MatchRules
+	err := rs.ScanMemBlocks(it, 0, 0, &mrs)
 	if err != nil {
 		fmt.Printf("error: %+v\n", err)
 		return

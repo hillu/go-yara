@@ -51,13 +51,13 @@ condition: $a at 0 and $b at 32
 
 `, nil)
 	var mrs MatchRules
-	if err := rs.ScanMemBlocksWithCallback(&testIter{}, 0, 0, &mrs); err != nil {
+	if err := rs.ScanMemBlocks(&testIter{}, 0, 0, &mrs); err != nil {
 		t.Errorf("simple iterator scan (no data): %v", err)
 	} else {
 		t.Logf("simple iterator scan (no data): %v", mrs)
 	}
 	mrs = nil
-	if err := rs.ScanMemBlocksWithCallback(&testIter{
+	if err := rs.ScanMemBlocks(&testIter{
 		data: []block{{0, nil}},
 	}, 0, 0, &mrs); err != nil {
 		t.Errorf("simple iterator scan (empty block): %v", err)
@@ -65,7 +65,7 @@ condition: $a at 0 and $b at 32
 		t.Logf("simple iterator scan (empty block): %+v", mrs)
 	}
 	mrs = nil
-	if err := rs.ScanMemBlocksWithCallback(&testIter{
+	if err := rs.ScanMemBlocks(&testIter{
 		data: []block{
 			{0, []byte("aaaaaaaaaaaaaaaa")},
 			{32, []byte("bbbbbbbbbbbbbbbb")},

@@ -53,7 +53,8 @@ func TestFileWalk(t *testing.T) {
 				}
 				// r.DefineVariable("filename", info.Name())
 				// r.DefineVariable("filepath", name)
-				if m, err := r.ScanFile(name, 0, 0); err == nil {
+				var m MatchRules
+				if err := r.ScanFile(name, 0, 0, &m); err == nil {
 					fmt.Printf("[%02d] Scan \"%s\": %d\n", i, path.Base(name), len(m))
 				} else {
 					fmt.Printf("[%02d] Scan \"%s\": %s\n", i, path.Base(name), err)
@@ -121,7 +122,7 @@ func TestScannerFileWalk(t *testing.T) {
 				s.DefineVariable("filepath", name)
 				s.DefineVariable("filename", info.Name())
 				var m MatchRules
-				if _, err := s.SetCallback(&m).ScanFile(name); err == nil {
+				if err := s.SetCallback(&m).ScanFile(name); err == nil {
 					fmt.Printf("[%02d] Scan \"%s\": %d\n", i, path.Base(name), len(m))
 				} else {
 					fmt.Printf("[%02d] Scan \"%s\": %s\n", i, path.Base(name), err)

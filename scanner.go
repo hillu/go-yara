@@ -43,8 +43,8 @@ type Scanner struct {
 	// The Scanner struct has to hold a pointer to the rules
 	// it wraps, as otherwise it may be be garbage collected.
 	rules *Rules
-	// current callback object, set by SetCallback
-	cb ScanCallback
+	// Current callback object, set by SetCallback
+	Callback ScanCallback
 }
 
 // NewScanner creates a YARA scanner.
@@ -120,38 +120,35 @@ func (s *Scanner) SetTimeout(timeout time.Duration) *Scanner {
 // For the common case where only a list of matched rules is relevant,
 // setting a callback object is not necessary.
 func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
-	s.cb = cb
+	s.Callback = cb
 	return s
 }
 
-// putCallbackData stores the appropriate callback object (pre-set
-// object or ad-hoc return-value-based ) into callbackData, returning
-// a pointer. The object must be removed from callbackData by the
-// calling ScanXxxx function.
-func (s *Scanner) putCallbackData(matches *[]MatchRule) unsafe.Pointer {
-	var sc ScanCallback
-	if s.cb != nil {
-		sc = s.cb
-	} else {
-		sc = (*MatchRules)(matches)
+// putCallbackData stores the scanner's callback object in
+// callbackData, returning a pointer. If no callback object has been
+// set, it is initialized with the pointer to an empty ScanRules
+// object. The object must be removed from callbackData by the calling
+// ScanXxxx function.
+func (s *Scanner) putCallbackData() unsafe.Pointer {
+	if _, ok := s.Callback.(ScanCallback); !ok {
+		s.Callback = &MatchRules{}
 	}
-	ptr := callbackData.Put(makeScanCallbackContainer(sc))
+	ptr := callbackData.Put(makeScanCallbackContainer(s.Callback))
 	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
 	return ptr
 }
 
 // ScanMem scans an in-memory buffer using the scanner.
 //
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error) {
+// If no callback object has been set for the scanner using
+// SetCAllback, it is initialized with an empty MatchRules object.
+func (s *Scanner) ScanMem(buf []byte) (err error) {
 	var ptr *C.uint8_t
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
 
-	cbPtr := s.putCallbackData(&matches)
+	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_mem(
@@ -164,14 +161,13 @@ func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error) {
 
 // ScanFile scans a file using the scanner.
 //
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
+// If no callback object has been set for the scanner using
+// SetCAllback, it is initialized with an empty MatchRules object.
+func (s *Scanner) ScanFile(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
 
-	cbPtr := s.putCallbackData(&matches)
+	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_file(
@@ -184,11 +180,10 @@ func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error) {
 
 // ScanFileDescriptor scans a file using the scanner.
 //
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error) {
-	cbPtr := s.putCallbackData(&matches)
+// If no callback object has been set for the scanner using
+// SetCAllback, it is initialized with an empty MatchRules object.
+func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
+	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
 	err = newError(C._yr_scanner_scan_fd(
@@ -201,11 +196,10 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error
 
 // ScanProc scans a live process using the scanner.
 //
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
-	cbPtr := s.putCallbackData(&matches)
+// If no callback object has been set for the scanner using
+// SetCAllback, it is initialized with an empty MatchRules object.
+func (s *Scanner) ScanProc(pid int) (err error) {
+	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_proc(
@@ -218,16 +212,15 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 
 // ScahMemBlocks scans over a MemoryBlockIterator using the scanner.
 //
-// If a callback object has been set for the scanner using
-// SetCAllback, matches is nil and the callback object is used instead
-// to collect scan events.
-func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator, cb ScanCallback) (matches []MatchRule, err error) {
+// If no callback object has been set for the scanner using
+// SetCAllback, it is initialized with an empty MatchRules object.
+func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
 	defer callbackData.Delete(cmbi.context)
 
-	cbPtr := s.putCallbackData(&matches)
+	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
 	err = newError(C.yr_scanner_scan_mem_blocks(

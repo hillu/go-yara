@@ -27,7 +27,7 @@ type ScanContext struct {
 
 // ScanCallback is a placeholder for different interfaces that may be
 // implemented by the callback object that is passed to the
-// (*Rules).Scan*WithCallback and (*Scanner).Scan methods.
+// (*Rules).ScanXxxx and (*Scanner).ScanXxxx methods.
 //
 // The RuleMatching method corresponds to YARA's
 // CALLBACK_MSG_RULE_MATCHING message.

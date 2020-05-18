@@ -309,7 +309,8 @@ func TestHexStrings(t *testing.T) {
 	}, []byte("123456789"))
 
 	rules := makeRules(t, "rule test { strings: $a = { 61 [0-3] (62|63) } condition: $a }")
-	matches, _ := rules.ScanMem([]byte("abbb"), 0, 0)
+	var matches MatchRules
+	rules.ScanMem([]byte("abbb"), 0, 0, &matches)
 	if matches[0].Strings[0].Name != "$a" ||
 		matches[0].Strings[0].Offset != 0 ||
 		string(matches[0].Strings[0].Data) != "ab" {
@@ -381,7 +382,8 @@ func TestExternals(t *testing.T) {
 			t.Errorf("rule=%s params=%+v: Compile error: %s", sample.rule, sample.params, err)
 			continue
 		}
-		m, _ := r.ScanMem([]byte("dummy"), 0, 0)
+		var m MatchRules
+		r.ScanMem([]byte("dummy"), 0, 0, &m)
 		if sample.predicate != (len(m) > 0) {
 			t.Errorf("rule=%s params=%+v: expected %t, got %t",
 				sample.rule, sample.params, sample.predicate, (len(m) > 0))
