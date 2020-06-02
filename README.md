@@ -10,85 +10,24 @@ Go bindings for [YARA](https://virustotal.github.io/yara/), staying as
 close as sensible to the library's C-API while taking inspiration from
 the `yara-python` implementation.
 
-## Installation
+## Build/Installation
 
-### Unix
-
-On a Unix system with libyara_ version 4, corresponding header files,
-and _pkg-config_ installed, the following should simply work:
+On a Unix system with _libyara_ version 4, corresponding header files,
+and _pkg-config_ installed, just do:
 
 ```
 go get github.com/hillu/go-yara
 go install github.com/hillu/go-yara
 ```
 
-The _pkg-config_ program should be able to output the correct compiler
-and linker flags from the `yara.pc` file that has been generated and
-installed by _YARA_'s build system. If _libyara_ has been installed to
-a custom location, the `PKG_CONFIG_PATH` environment variable can be
-used to point _pkg-config_ at the right `yara.pc` file. If
-_pkg-config_ cannot be used at all, please refer to the "Build Tags" section.
+If _libyara_ has been installed to a custom location, the
+`PKG_CONFIG_PATH` environment variable can be used to point
+_pkg-config_ at the right `yara.pc` file.
 
-### Cross-building
-
-_go-yara_ can be cross-built for a different CPU
-architecture/operating system platform, provided a C cross-compiler
-for the target platform is available to be used by the _cgo_ tool.
-
-After the _yara_ library has been built from its source tree using the
-proper C cross-compiler through the usual `configure / make / make
-install` steps, _go-yara_ can be built and installed. Some environment
-variables need to be set when running `go build` or `go install`:
-
-- `GOOS`, `GOARCH` indicate the cross compilation target.
-- `CGO_ENABLED` has to be set to 1 beacuse it defaults to 0 when
-  cross-compiling.
-- `CC` has to specified because _cgo_ has no prior knowledge about
-  what C compiler to chose for cross-compiling. (it defaults to the
-  system C compiler, usually gcc).
-- `PKG_CONFIG_PATH` has to be set in so that _pkg-config_ which is run
-  by _cgo_ for determining compiler and linker flags can find the
-  `yara.pc` file generated while cross-building _yara_.
-
-#### Example: Cross-building for Windows on Debian/streach
-
-Install the MinGW C compiler `gcc-mingw-w64-i686`,
-`gcc-mingw-w64-x86-64` for Win32, Win64, respectively.
-
-Build _libyara_ and _go-yara_ for Win32:
-```
-$ cd ${YARA_SRC} \
-  && ./bootstrap.sh \
-  && ./configure --host=i686-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/i686-w64-mingw32 \
-  && make -C ${YARA_SRC} \
-  && make -C ${YARA_SRC} install 
-$ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
-  CC=i686-w64-mingw32-gcc \
-  PKG_CONFIG_PATH=${YARA_SRC}/i686-w64-mingw32/lib/pkgconfig \
-  go inxstall -ldflags '-extldflags "-static"' github.com/hillu/go-yara
-```
-
-Build _libyara_ and _go-yara_ for Win64:
-```
-$ cd ${YARA_SRC} \
-  && ./bootstrap.sh \
-  && ./configure --host=x86_64-w64-mingw32 --disable-magic --disable-cuckoo --without-crypto --prefix=${YARA_SRC}/x86_64-w64-mingw32 \
-  && make -C ${YARA_SRC} \
-  && make -C ${YARA_SRC} install 
-$ GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
-  CC=x86_64-w64-mingw32-gcc \
-  PKG_CONFIG_PATH=${YARA_SRC}/x86_64-w64-mingw32/lib/pkgconfig \
-  go install -ldflags '-extldflags "-static"' github.com/hillu/go-yara
-```
-
-## YARA 3.x vs. YARA 4.x
-
-The release of YARA 4.0.0 introduces some API incompatibilities,
-therefore I have decided to break compatibility with YARA 3.x for the
-4.0.0 release of _go-yara_ which lives on the `master` branch.
-
-Versions of _go-yara_ compatible with YARA 3.x (>= 3.11) live on the
-`v3.x` branch.
+For anything more complicated, refer to the "Build Tags" section
+below. Instructions for cross-building _go-yara_ for different
+operating systems or architectures can be found in a [separate
+document](README.cross-building.md).
 
 ## Build Tags
 
@@ -108,10 +47,20 @@ export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
 go install -tags yara_no_pkg_config github.com/hillu/go-yara
 ```
 
+## YARA 4.x vs. earlier versions
+
+This version of _go-yara_ can only be used with YARA 4.0 or later.
+
+Versions of _go-yara_ compatible with YARA 3.11 are available via the
+`v3.x` branch or tagged `v3.*` releases.
+
+Versions of _go-yara_ compatible with earlier 3.x versions of YARA are
+available via the `v1.x` branch or tagged `v1.*` releases.
+
 ## License
 
 BSD 2-clause, see LICENSE file in the source distribution.
 
 ## Author
 
-Hilko Bengen <bengen@hilluzination.de>
+Hilko Bengen <<bengen@hilluzination.de>>
