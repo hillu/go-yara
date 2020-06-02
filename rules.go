@@ -284,8 +284,8 @@ func (r *Rules) GetRules() (rv []Rule) {
 	// #define yr_rules_foreach(rules, rule) \
 	//     for (rule = rules->rules_list_head; !RULE_IS_NULL(rule); rule++)
 	// #define RULE_IS_NULL(x) \
-	//     (((x)->g_flags) & RULE_GFLAGS_NULL)
-	for p := r.cptr.rules_list_head; p.flags&C.RULE_FLAGS_NULL != 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
+	//     (((x)->flags) & RULE_FLAGS_NULL)
+	for p := r.cptr.rules_list_head; p.flags&C.RULE_FLAGS_NULL == 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
 		rv = append(rv, Rule{(*C.YR_RULE)(p)})
 	}
 	return
