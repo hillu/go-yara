@@ -9,8 +9,7 @@ go:
  - 1.13.x
  - 1.14.x
  - tip
-gobuild_args: -tags yara_no_pkg_config
-dist: xenial
+dist: bionic
 addons:
   apt:
     packages:
@@ -21,9 +20,14 @@ addons:
     - libtool
     - make
     - gcc
+    - pkg-config
 before_install:
-  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.1.tar.gz | tar -C ${TRAVIS_BUILD_DIR} -xzf -
-  - ( cd ${TRAVIS_BUILD_DIR}/yara-4.0.1 && ./bootstrap.sh && ./configure && make )
-  - export CGO_CFLAGS=-I${TRAVIS_BUILD_DIR}/yara-4.0.1/libyara/include
-  - export CGO_LDFLAGS=-L${TRAVIS_BUILD_DIR}/yara-4.0.1/libyara/.libs
-  - export LD_LIBRARY_PATH=${TRAVIS_BUILD_DIR}/yara-4.0.1/libyara/.libs
+  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.1.tar.gz | tar -C ${HOME} -xzf -
+  - ( cd ${HOME}/yara-4.0.1 && ./bootstrap.sh )
+  - ( mkdir -p ${HOME}/yara-build &&
+      cd ${HOME}/yara-build &&
+      ${HOME}/yara-4.0.1/configure --prefix=${HOME}/prefix )
+  - make -C ${HOME}/yara-build install
+  - find ${HOME}/prefix
+  - export PKG_CONFIG_PATH=${HOME}/prefix/lib/pkgconfig
+  - export LD_LIBRARY_PATH=${HOME}/prefix/lib
