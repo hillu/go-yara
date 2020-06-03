@@ -26,8 +26,8 @@ _pkg-config_ at the right `yara.pc` file.
 
 For anything more complicated, refer to the "Build Tags" section
 below. Instructions for cross-building _go-yara_ for different
-operating systems or architectures can be found in a [separate
-document](README.cross-building.md).
+operating systems or architectures can be found in
+[README.cross-building.md](README.cross-building.md).
 
 ## Build Tags
 
