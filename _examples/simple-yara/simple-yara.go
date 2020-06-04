@@ -105,16 +105,17 @@ func main() {
 		log.Fatalf("Failed to compile rules: %s", err)
 	}
 
+	var m yara.MatchRules
 	if processScan {
 		for _, pid := range pids {
 			log.Printf("Scanning process %d...", pid)
-			m, err := r.ScanProc(pid, 0, 0, nil)
+			err := r.ScanProc(pid, 0, 0, &m)
 			printMatches(m, err)
 		}
 	} else {
 		for _, filename := range args {
 			log.Printf("Scanning file %s... ", filename)
-			m, err := r.ScanFile(filename, 0, 0, nil)
+			err := r.ScanFile(filename, 0, 0, &m)
 			printMatches(m, err)
 		}
 	}
