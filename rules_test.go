@@ -210,71 +210,35 @@ func TestScanMemCgoPointer(t *testing.T) {
 	}
 }
 
+type rule struct {
+	identifier      string
+	tags            []string
+	metas           []Meta
+	private, global bool
+}
+
 func TestRule(t *testing.T) {
-	r := makeRules(t, `
+	rs := makeRules(t, `
 		rule t1 : tag1 { meta: author = "Author One" strings: $a = "abc" fullword condition: $a }
         rule t2 : tag2 x y { meta: author = "Author Two" strings: $b = "def" condition: $b }
         rule t3 : tag3 x y z { meta: author = "Author Three" strings: $c = "ghi" condition: $c }
 		rule t4 { strings: $d = "qwe" condition: $d }
 		private rule t5 { condition: false }
 		global rule t6 { condition: false }`)
-	if len(r.GetRules()) != 6 {
-		t.Error("Number of generated rules was incorrect")
+	expected := []rule{
+		rule{"t1", []string{"tag1"}, []Meta{{"author", "Author One"}}, false, false},
+		rule{"t2", []string{"tag2", "x", "y"}, []Meta{{"author", "Author Two"}}, false, false},
+		rule{"t3", []string{"tag3", "x", "y", "z"}, []Meta{{"author", "Author Three"}}, false, false},
+		rule{"t4", nil, nil, false, false},
+		rule{"t5", nil, nil, true, false},
+		rule{"t6", nil, nil, false, true},
 	}
-	for _, r := range r.GetRules() {
-		t.Logf("%s:%s %#v", r.Namespace(), r.Identifier(), r.Tags())
-		switch r.Identifier() {
-		case "t1":
-			if !reflect.DeepEqual(r.Tags(), []string{"tag1"}) {
-				t.Error("Got wrong tags for t1")
-			}
-			if !reflect.DeepEqual(r.Metas(), []Meta{Meta{"author", "Author One"}}) {
-				t.Error("Got wrong meta variables for t1")
-			}
-		case "t2":
-			if !reflect.DeepEqual(r.Tags(), []string{"tag2", "x", "y"}) {
-				t.Error("Got wrong tags for t2")
-			}
-			if !reflect.DeepEqual(r.Metas(), []Meta{Meta{"author", "Author Two"}}) {
-				t.Error("Got wrong meta variables for t2")
-			}
-		case "t3":
-			if !reflect.DeepEqual(r.Tags(), []string{"tag3", "x", "y", "z"}) {
-				t.Error("Got wrong tags for t3")
-			}
-			if !reflect.DeepEqual(r.Metas(), []Meta{Meta{"author", "Author Three"}}) {
-				t.Error("Got wrong meta variables for t3")
-			}
-		case "t4":
-			if len(r.Tags()) != 0 {
-				t.Error("Got tags for t4")
-			}
-			if len(r.Metas()) != 0 {
-				t.Error("Got meta variables for t4")
-			}
-			if r.IsPrivate() {
-				t.Error("Rule t5 is not supposed to be private!")
-			}
-			if r.IsGlobal() {
-				t.Error("Rule t5 is not supposed to be global!")
-			}
-		case "t5":
-			if !r.IsPrivate() {
-				t.Error("Rule t5 is supposed to be private!")
-			}
-			if r.IsGlobal() {
-				t.Error("Rule t5 is not supposed to be global!")
-			}
-		case "t6":
-			if !r.IsGlobal() {
-				t.Error("Rule t5 is supposed to be global!")
-			}
-			if r.IsPrivate() {
-				t.Error("Rule t6 is not supposed to be private!")
-			}
-		default:
-			t.Errorf("Found unexpected rule name: %#v", r.Identifier())
-		}
+	var got []rule
+	for _, r := range rs.GetRules() {
+		got = append(got, rule{identifier: r.Identifier(), metas: r.Metas(), tags: r.Tags(), private: r.IsPrivate(), global: r.IsGlobal()})
+	}
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("Got %+v , expected %+v", got, expected)
 	}
 }
 
