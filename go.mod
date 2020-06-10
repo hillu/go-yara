@@ -1,1 +1,1 @@
-module github.com/hillu/go-yara
+module github.com/hillu/go-yara/v4
