@@ -12,12 +12,21 @@ the `yara-python` implementation.
 
 ## Build/Installation
 
-On a Unix system with _libyara_ version 4, corresponding header files,
-and _pkg-config_ installed, just do:
+On y Unix system, _libyara_ version 4, corresponding header files, and
+_pkg-config_ must be installed. Adding _go-yara_ v4 to a project with
+Go Modules enabled, simply add the proper dependency…
+
+``` go
+import "github.com/hillu/go-yara/v4"
+```
+
+…and rebuild your package.
+
+To install _go-yara_ v4 to GOPATH, do:
 
 ```
-go get github.com/hillu/go-yara
-go install github.com/hillu/go-yara
+go get github.com/hillu/go-yara/v4
+go install github.com/hillu/go-yara/v4
 ```
 
 If _libyara_ has been installed to a custom location, the
