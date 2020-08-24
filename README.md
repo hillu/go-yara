@@ -2,7 +2,7 @@
 
 # go-yara
 
-[![GoDoc](https://godoc.org/github.com/hillu/go-yara?status.svg)](https://godoc.org/github.com/hillu/go-yara)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/hillu/go-yara/v4)](https://pkg.go.dev/github.com/hillu/go-yara/v4)
 [![Travis](https://travis-ci.org/hillu/go-yara.svg?branch=master)](https://travis-ci.org/hillu/go-yara)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hillu/go-yara)](https://goreportcard.com/report/github.com/hillu/go-yara)
 
