@@ -40,10 +40,14 @@ operating systems or architectures can be found in
 
 ## Build Tags
 
+### Static builds
+
 The build tag `yara_static` can be used to tell the Go toolchain to
 run _pkg-config_ with the `--static` switch. This is not enough for a
 static build; the appropriate linker flags (e.g. `-extldflags
 "-static"`) still need to be passed to the _go_ tool.
+
+### Building without _pkg-config_
 
 The build tag `yara_no_pkg_config` can be used to tell the Go toolchain not
 to use _pkg-config_'s output. In this case, any compiler or linker
