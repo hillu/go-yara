@@ -3,67 +3,48 @@ package main
 import (
 	"github.com/hillu/go-yara/v4"
 
-	"errors"
+	"bytes"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"strings"
+	"sync"
 )
 
-type rule struct{ namespace, filename string }
-type rules []rule
-
-func (r *rules) Set(arg string) error {
-	if len(arg) == 0 {
-		return errors.New("empty rule specification")
+func printMatches(item string, m []yara.MatchRule, err error) {
+	if err != nil {
+		log.Printf("%s: error: %s", item, err)
+		return
 	}
-	a := strings.SplitN(arg, ":", 2)
-	switch len(a) {
-	case 1:
-		*r = append(*r, rule{filename: a[0]})
-	case 2:
-		*r = append(*r, rule{namespace: a[0], filename: a[1]})
+	if len(m) == 0 {
+		log.Printf("%s: no matches", item)
+		return
 	}
-	return nil
-}
-
-func (r *rules) String() string {
-	var s string
-	for _, rule := range *r {
-		if len(s) > 0 {
-			s += " "
+	buf := &bytes.Buffer{}
+	fmt.Fprintf(buf, "%s: [", item)
+	for i, match := range m {
+		if i > 0 {
+			fmt.Fprint(buf, ", ")
 		}
-		if rule.namespace != "" {
-			s += rule.namespace + ":"
-		}
-		s += rule.filename
+		fmt.Fprintf(buf, "%s:%s", match.Namespace, match.Rule)
 	}
-	return s
-}
-
-func printMatches(m []yara.MatchRule, err error) {
-	if err == nil {
-		if len(m) > 0 {
-			for _, match := range m {
-				log.Printf("- [%s] %s ", match.Namespace, match.Rule)
-			}
-		} else {
-			log.Print("no matches.")
-		}
-	} else {
-		log.Printf("error: %s.", err)
-	}
+	fmt.Fprint(buf, "]")
+	log.Print(buf.String())
 }
 
 func main() {
 	var (
 		rules       rules
+		vars        variables
 		processScan bool
 		pids        []int
+		threads     int
 	)
 	flag.BoolVar(&processScan, "processes", false, "scan processes instead of files")
-	flag.Var(&rules, "rule", "add rule")
+	flag.Var(&rules, "rule", "add rules in source form: [namespace:]filename")
+	flag.Var(&vars, "define", "define variable referenced n ruleset")
+	flag.IntVar(&threads, "threads", 1, "use specified number of threads")
 	flag.Parse()
 
 	if len(rules) == 0 {
@@ -89,6 +70,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize YARA compiler: %s", err)
 	}
+	for id, value := range vars {
+		if err := c.DefineVariable(id, value); err != nil {
+			log.Fatal("failed to define variable '%s': %s", id, err)
+		}
+	}
 	for _, rule := range rules {
 		f, err := os.Open(rule.filename)
 		if err != nil {
@@ -105,18 +91,45 @@ func main() {
 		log.Fatalf("Failed to compile rules: %s", err)
 	}
 
-	var m yara.MatchRules
+	wg := sync.WaitGroup{}
+	wg.Add(threads)
+
 	if processScan {
+		c := make(chan int, threads)
+		for i := 0; i < threads; i++ {
+			s, _ := yara.NewScanner(r)
+			go func(c chan int, tid int) {
+				for pid := range c {
+					var m yara.MatchRules
+					log.Printf("<%02d> Scanning process %d...", tid, pid)
+					err := s.SetCallback(&m).ScanProc(pid)
+					printMatches(fmt.Sprintf("<pid %d", pid), m, err)
+				}
+				wg.Done()
+			}(c, i)
+		}
 		for _, pid := range pids {
-			log.Printf("Scanning process %d...", pid)
-			err := r.ScanProc(pid, 0, 0, &m)
-			printMatches(m, err)
+			c <- pid
 		}
+		close(c)
 	} else {
-		for _, filename := range args {
-			log.Printf("Scanning file %s... ", filename)
-			err := r.ScanFile(filename, 0, 0, &m)
-			printMatches(m, err)
+		c := make(chan string, threads)
+		for i := 0; i < threads; i++ {
+			s, _ := yara.NewScanner(r)
+			go func(c chan string, tid int) {
+				for filename := range c {
+					var m yara.MatchRules
+					log.Printf("<%02d> Scanning file %s... ", tid, filename)
+					err := s.SetCallback(&m).ScanFile(filename)
+					printMatches(filename, m, err)
+				}
+				wg.Done()
+			}(c, i)
 		}
+		for _, filename := range args {
+			c <- filename
+		}
+		close(c)
 	}
+	wg.Wait()
 }
