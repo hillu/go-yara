@@ -81,6 +81,14 @@ const (
 	ScanFlagsProcessMemory = C.SCAN_FLAGS_PROCESS_MEMORY
 )
 
+func (sf ScanFlags) withReportFlags(sc ScanCallback) (i C.int) {
+	i = C.int(sf) | C.SCAN_FLAGS_REPORT_RULES_MATCHING
+	if _, ok := sc.(ScanCallbackNoMatch); ok {
+		i |= C.SCAN_FLAGS_REPORT_RULES_NOT_MATCHING
+	}
+	return
+}
+
 // ScanMem scans an in-memory buffer using the ruleset.
 // For every event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
@@ -95,7 +103,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 		r.cptr,
 		ptr,
 		C.size_t(len(buf)),
-		C.int(flags),
+		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
@@ -114,7 +122,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
-		C.int(flags),
+		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
@@ -131,7 +139,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
-		C.int(flags),
+		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
@@ -148,7 +156,7 @@ func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration, cb Sca
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
-		C.int(flags),
+		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))
@@ -169,7 +177,7 @@ func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout 
 	err = newError(C.yr_rules_scan_mem_blocks(
 		r.cptr,
 		cmbi,
-		C.int(flags),
+		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
 		id,
 		C.int(timeout/time.Second)))

@@ -45,6 +45,8 @@ type Scanner struct {
 	rules *Rules
 	// Current callback object, set by SetCallback
 	Callback ScanCallback
+	// Scan flags are set just before scanning.
+	flags ScanFlags
 }
 
 // NewScanner creates a YARA scanner.
@@ -103,7 +105,7 @@ func (s *Scanner) DefineVariable(identifier string, value interface{}) (err erro
 
 // SetFlags sets flags for the scanner.
 func (s *Scanner) SetFlags(flags ScanFlags) *Scanner {
-	C.yr_scanner_set_flags(s.cptr, C.int(flags))
+	s.flags = flags
 	return s
 }
 
@@ -151,6 +153,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem(
 		s.cptr,
 		ptr,
@@ -170,6 +173,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_file(
 		s.cptr,
 		cfilename,
@@ -186,6 +190,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C._yr_scanner_scan_fd(
 		s.cptr,
 		C.int(fd),
@@ -202,6 +207,7 @@ func (s *Scanner) ScanProc(pid int) (err error) {
 	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_proc(
 		s.cptr,
 		C.int(pid),
@@ -223,6 +229,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	cbPtr := s.putCallbackData()
 	defer callbackData.Delete(cbPtr)
 
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem_blocks(
 		s.cptr,
 		cmbi,
