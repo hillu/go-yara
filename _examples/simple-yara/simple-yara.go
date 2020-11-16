@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
@@ -126,8 +127,19 @@ func main() {
 				wg.Done()
 			}(c, i)
 		}
-		for _, filename := range args {
-			c <- filename
+		for _, path := range args {
+			if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+				if info.Mode().IsRegular() {
+					c <- path
+				} else if info.Mode().IsDir() {
+					return nil
+				} else {
+					log.Printf("Sipping %s", path)
+				}
+				return nil
+			}); err != nil {
+				log.Printf("walk: %s: %s", path, err)
+			}
 		}
 		close(c)
 	}
