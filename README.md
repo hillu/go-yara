@@ -33,6 +33,9 @@ If _libyara_ has been installed to a custom location, the
 `PKG_CONFIG_PATH` environment variable can be used to point
 _pkg-config_ at the right `yara.pc` file.
 
+On Windows systems, please refers to the specific installation 
+process [README.windows-installation](README.windows-installation.md).
+
 For anything more complicated, refer to the "Build Tags" section
 below. Instructions for cross-building _go-yara_ for different
 operating systems or architectures can be found in
