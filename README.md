@@ -12,22 +12,15 @@ the `yara-python` implementation.
 
 ## Build/Installation
 
-On y Unix system, _libyara_ version 4, corresponding header files, and
-_pkg-config_ must be installed. Adding _go-yara_ v4 to a project with
-Go Modules enabled, simply add the proper dependency…
+On Unix-like systems, _libyara_ version 4, corresponding header files,
+and _pkg-config_ must be installed. Adding _go-yara_ v4 to a project
+with Go Modules enabled, simply add the proper dependency…
 
 ``` go
 import "github.com/hillu/go-yara/v4"
 ```
 
 …and rebuild your package.
-
-To install _go-yara_ v4 to GOPATH, do:
-
-```
-go get github.com/hillu/go-yara/v4
-go install github.com/hillu/go-yara/v4
-```
 
 If _libyara_ has been installed to a custom location, the
 `PKG_CONFIG_PATH` environment variable can be used to point
@@ -37,6 +30,11 @@ For anything more complicated, refer to the "Build Tags" section
 below. Instructions for cross-building _go-yara_ for different
 operating systems or architectures can be found in
 [README.cross-building.md](README.cross-building.md).
+
+To build _go-yara_ on Windows, a GCC-based build environment is
+required, preferably one that includes _pkg-config_. The 32-bit and
+64-bit MinGW environments provided by the [MSYS2](https://msys2.org/)
+provide such an environment.
 
 ## Build Tags
 
