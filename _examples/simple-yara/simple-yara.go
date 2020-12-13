@@ -49,11 +49,13 @@ func main() {
 	flag.Parse()
 
 	if len(rules) == 0 {
+		flag.Usage()
 		log.Fatal("no rules specified")
 	}
 
 	args := flag.Args()
 	if len(args) == 0 {
+		flag.Usage()
 		log.Fatal("no files or processes specified")
 	}
 
