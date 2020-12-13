@@ -284,17 +284,3 @@ func (r *Rules) DefineVariable(identifier string, value interface{}) (err error)
 	runtime.KeepAlive(r)
 	return
 }
-
-// GetRules returns a slice of rule objects that are part of the
-// ruleset.
-func (r *Rules) GetRules() (rv []Rule) {
-	// Equivalent to:
-	// #define yr_rules_foreach(rules, rule) \
-	//     for (rule = rules->rules_list_head; !RULE_IS_NULL(rule); rule++)
-	// #define RULE_IS_NULL(x) \
-	//     (((x)->flags) & RULE_FLAGS_NULL)
-	for p := r.cptr.rules_list_head; p.flags&C.RULE_FLAGS_NULL == 0; p = (*C.YR_RULE)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Sizeof(*p))) {
-		rv = append(rv, Rule{(*C.YR_RULE)(p)})
-	}
-	return
-}

@@ -89,6 +89,20 @@ static void string_matches(YR_SCAN_CONTEXT *ctx, YR_STRING* s, const YR_MATCH *m
 	return;
 }
 
+// get_rules returns pointers to the RULE objects for a ruleset, using
+// YARA's macro-based implementation.
+static void get_rules(YR_RULES *ruleset, const YR_RULE *rules[], int *n) {
+	const YR_RULE *rule;
+	int i = 0;
+	yr_rules_foreach(ruleset, rule) {
+		if (i < *n)
+			rules[i] = rule;
+		i++;
+	}
+	*n = i;
+	return;
+}
+
 */
 import "C"
 import "unsafe"
@@ -257,4 +271,20 @@ func (r *Rule) Enable() {
 // Disable disables a single rule.
 func (r *Rule) Disable() {
 	C.yr_rule_disable(r.cptr)
+}
+
+// GetRules returns a slice of rule objects that are part of the
+// ruleset.
+func (r *Rules) GetRules() (rules []Rule) {
+	var size C.int
+	C.get_rules(r.cptr, nil, &size)
+	if size == 0 {
+		return
+	}
+	ptrs := make([]*C.YR_RULE, int(size))
+	C.get_rules(r.cptr, &ptrs[0], &size)
+	for _, ptr := range ptrs {
+		rules = append(rules, Rule{ptr})
+	}
+	return
 }
