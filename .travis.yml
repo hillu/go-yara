@@ -20,11 +20,11 @@ addons:
     - gcc
     - pkg-config
 before_install:
-  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.1.tar.gz | tar -C ${HOME} -xzf -
-  - ( cd ${HOME}/yara-4.0.1 && ./bootstrap.sh )
+  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.2.tar.gz | tar -C ${HOME} -xzf -
+  - ( cd ${HOME}/yara-4.0.2 && ./bootstrap.sh )
   - ( mkdir -p ${HOME}/yara-build &&
       cd ${HOME}/yara-build &&
-      ${HOME}/yara-4.0.1/configure --prefix=${HOME}/prefix )
+      ${HOME}/yara-4.0.2/configure --prefix=${HOME}/prefix )
   - make -C ${HOME}/yara-build install
   - find ${HOME}/prefix
   - export PKG_CONFIG_PATH=${HOME}/prefix/lib/pkgconfig
