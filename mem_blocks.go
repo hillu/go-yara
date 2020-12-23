@@ -34,7 +34,7 @@ type MemoryBlockIterator interface {
 type memoryBlockIteratorContainer struct {
 	MemoryBlockIterator
 	// MemoryBlock holds return values of the First and Next methods
-	// as it is moved back to libyara. (FIXME: Is this needed?)
+	// as it is moved back to libyara.
 	*MemoryBlock
 	// cblock is passed to memoryBlockFetch. Its data lives in malloc
 	// memory.
@@ -94,6 +94,9 @@ type MemoryBlock struct {
 	FetchData func([]byte)
 }
 
+// memoryBlockFetch is used as YR_MEMORY_BLOCK.fetch_data.
+// It is called from YARA code.
+//
 //export memoryBlockFetch
 func memoryBlockFetch(cblock *C.YR_MEMORY_BLOCK) *C.uint8_t {
 	c := callbackData.Get(cblock.context).(*memoryBlockIteratorContainer)
@@ -102,6 +105,9 @@ func memoryBlockFetch(cblock *C.YR_MEMORY_BLOCK) *C.uint8_t {
 	return (*C.uint8_t)(unsafe.Pointer(&c.buf[0]))
 }
 
+// memoryBlockFetchNull is used as YR_MEMORY_BLOCK.fetch_data for empty blocks.
+// It is called from YARA code.
+//
 //export memoryBlockFetchNull
 func memoryBlockFetchNull(*C.YR_MEMORY_BLOCK) *C.uint8_t { return nil }
 
@@ -123,6 +129,9 @@ func memoryBlockIteratorCommon(cmbi *C.YR_MEMORY_BLOCK_ITERATOR, c *memoryBlockI
 	return
 }
 
+// memoryBlockIteratorFirst is used as YR_MEMORY_BLOCK_ITERATOR.first.
+// It is called from YARA code.
+//
 //export memoryBlockIteratorFirst
 func memoryBlockIteratorFirst(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOCK {
 	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)
@@ -130,6 +139,9 @@ func memoryBlockIteratorFirst(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLO
 	return memoryBlockIteratorCommon(cmbi, c)
 }
 
+// memoryBlockIteratorNext is used as YR_MEMORY_BLOCK_ITERATOR.next.
+// It is called from YARA code.
+//
 //export memoryBlockIteratorNext
 func memoryBlockIteratorNext(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOCK {
 	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)

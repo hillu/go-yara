@@ -10,11 +10,13 @@ package yara
 #include <yara.h>
 
 // rule_identifier is a union accessor function.
+// (CGO does not represent them properly to Go code.)
 static const char* rule_identifier(YR_RULE* r) {
 	return r->identifier;
 }
 
 // rule_namespace is a union accessor function.
+// (CGO does not represent them properly to Go code.)
 static const char* rule_namespace(YR_RULE* r) {
 	return r->ns->name;
 }
@@ -47,9 +49,8 @@ static void rule_metas(YR_RULE* r, const YR_META *metas[], int *n) {
 	return;
 }
 
-// meta_get is an accessor function for unions that are not directly
-// accessible from Go because CGO does not understand the union types
-// generated using the DECLARE_REFERENCE macro.
+// meta_get is a union accessor function.
+// (CGO does not represent them properly to Go code.)
 static void meta_get(YR_META *m, const char** identifier, char** string) {
 	*identifier = m->identifier;
 	*string = (char*)m->string;
@@ -71,6 +72,7 @@ static void rule_strings(YR_RULE* r, const YR_STRING *strings[], int *n) {
 }
 
 // string_identifier is a union accessor function.
+// (CGO does not represent them properly to Go code.)
 static const char* string_identifier(YR_STRING* s) {
 	return s->identifier;
 }
