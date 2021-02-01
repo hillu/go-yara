@@ -20,7 +20,7 @@ addons:
     - gcc
     - pkg-config
 before_install:
-  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.2.tar.gz | tar -C ${HOME} -xzf -
+  - wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v4.0.4.tar.gz | tar -C ${HOME} -xzf -
   - ( cd ${HOME}/yara-4.0.2 && ./bootstrap.sh )
   - ( mkdir -p ${HOME}/yara-build &&
       cd ${HOME}/yara-build &&
