@@ -162,7 +162,7 @@ func (r *Rules) ScanMemBlocksWithCallback(mbi MemoryBlockIterator, flags ScanFla
 		next:    C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
 	}
 	defer callbackData.Delete(cmbi.context)
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem_blocks(
 		r.cptr,
