@@ -70,14 +70,15 @@ type ScanCallbackModuleImportFinished interface {
 // pointers.
 type scanCallbackContainer struct {
 	ScanCallback
+	rules *Rules
 	cdata []unsafe.Pointer
 }
 
 // makeScanCallbackContainer sets up a scanCallbackContainer with a
 // finalizer method that that frees any stored C pointers when the
 // container is garbage-collected.
-func makeScanCallbackContainer(sc ScanCallback) *scanCallbackContainer {
-	c := &scanCallbackContainer{ScanCallback: sc, cdata: nil}
+func makeScanCallbackContainer(sc ScanCallback, r *Rules) *scanCallbackContainer {
+	c := &scanCallbackContainer{sc, r, nil}
 	runtime.SetFinalizer(c, (*scanCallbackContainer).finalize)
 	return c
 }
@@ -108,10 +109,10 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 	var err error
 	switch message {
 	case C.CALLBACK_MSG_RULE_MATCHING:
-		abort, err = cbc.ScanCallback.RuleMatching(s, &Rule{(*C.YR_RULE)(messageData)})
+		abort, err = cbc.ScanCallback.RuleMatching(s, &Rule{(*C.YR_RULE)(messageData), cbc.rules})
 	case C.CALLBACK_MSG_RULE_NOT_MATCHING:
 		if c, ok := cbc.ScanCallback.(ScanCallbackNoMatch); ok {
-			abort, err = c.RuleNotMatching(s, &Rule{(*C.YR_RULE)(messageData)})
+			abort, err = c.RuleNotMatching(s, &Rule{(*C.YR_RULE)(messageData), cbc.rules})
 		}
 	case C.CALLBACK_MSG_SCAN_FINISHED:
 		if c, ok := cbc.ScanCallback.(ScanCallbackFinished); ok {

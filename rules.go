@@ -97,7 +97,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
@@ -117,7 +117,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
@@ -134,7 +134,7 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 // emitted by libyara, the corresponding method on the ScanCallback
 // object is called.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
@@ -151,7 +151,7 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 // every event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
 func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
@@ -172,7 +172,7 @@ func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout 
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
 	defer callbackData.Delete(cmbi.context)
-	id := callbackData.Put(makeScanCallbackContainer(cb))
+	id := callbackData.Put(makeScanCallbackContainer(cb, r))
 	defer callbackData.Delete(id)
 	err = newError(C.yr_rules_scan_mem_blocks(
 		r.cptr,

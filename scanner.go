@@ -135,7 +135,7 @@ func (s *Scanner) putCallbackData() unsafe.Pointer {
 	if _, ok := s.Callback.(ScanCallback); !ok {
 		s.Callback = &MatchRules{}
 	}
-	ptr := callbackData.Put(makeScanCallbackContainer(s.Callback))
+	ptr := callbackData.Put(makeScanCallbackContainer(s.Callback, s.rules))
 	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
 	return ptr
 }
@@ -244,7 +244,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 func (s *Scanner) GetLastErrorRule() (r *Rule) {
 	ptr := C.yr_scanner_last_error_rule(s.cptr)
 	if ptr != nil {
-		r = &Rule{ptr}
+		r = &Rule{ptr, s.rules}
 	}
 	runtime.KeepAlive(s)
 	return
@@ -256,7 +256,7 @@ func (s *Scanner) GetLastErrorRule() (r *Rule) {
 func (s *Scanner) GetLastErrorString() (r *String) {
 	ptr := C.yr_scanner_last_error_string(s.cptr)
 	if ptr != nil {
-		r = &String{ptr}
+		r = &String{ptr, s.rules}
 	}
 	runtime.KeepAlive(s)
 	return
@@ -270,7 +270,7 @@ type RuleProfilingInfo struct {
 // GetProfilingInfo retrieves profiling information from the Scanner.
 func (s *Scanner) GetProfilingInfo() (rpis []RuleProfilingInfo) {
 	for rpi := C.yr_scanner_get_profiling_info(s.cptr); rpi.rule != nil; rpi = (*C.YR_RULE_PROFILING_INFO)(unsafe.Pointer(uintptr(unsafe.Pointer(rpi)) + unsafe.Sizeof(*rpi))) {
-		rpis = append(rpis, RuleProfilingInfo{Rule{rpi.rule}, uint64(rpi.cost)})
+		rpis = append(rpis, RuleProfilingInfo{Rule{rpi.rule, s.rules}, uint64(rpi.cost)})
 	}
 	return
 }
