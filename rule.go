@@ -110,10 +110,11 @@ import "C"
 import "unsafe"
 
 // Rule represents a single rule as part of a ruleset.
-//
-// Since this type contains a C pointer to a YR_RULE structure that
-// may be automatically freed, it should not be copied.
-type Rule struct{ cptr *C.YR_RULE }
+type Rule struct {
+	cptr *C.YR_RULE
+	// Save underlying YR_RULES from being discarded through GC
+	rules *Rules
+}
 
 // Identifier returns the rule's name.
 func (r *Rule) Identifier() string {
@@ -186,10 +187,11 @@ func (r *Rule) IsGlobal() bool {
 }
 
 // String represents a string as part of a rule.
-//
-// Since this type contains a C pointer to a YR_STRING structure that
-// may be automatically freed, it should not be copied.
-type String struct{ cptr *C.YR_STRING }
+type String struct {
+	cptr *C.YR_STRING
+	// Save underlying YR_RULES from being discarded through GC
+	rules *Rules
+}
 
 // Strings returns the rule's strings.
 func (r *Rule) Strings() (strs []String) {
@@ -201,7 +203,7 @@ func (r *Rule) Strings() (strs []String) {
 	ptrs := make([]*C.YR_STRING, int(size))
 	C.rule_strings(r.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		strs = append(strs, String{ptr})
+		strs = append(strs, String{ptr, r.rules})
 	}
 	return
 }
@@ -212,10 +214,11 @@ func (s *String) Identifier() string {
 }
 
 // Match represents a string match.
-//
-// Since this type contains a C pointer to a YR_MATCH structure that
-// may be automatically freed, it should not be copied.
-type Match struct{ cptr *C.YR_MATCH }
+type Match struct {
+	cptr *C.YR_MATCH
+	// Save underlying YR_RULES from being discarded through GC
+	rules *Rules
+}
 
 // Matches returns all matches that have been recorded for the string.
 func (s *String) Matches(sc *ScanContext) (matches []Match) {
@@ -230,7 +233,7 @@ func (s *String) Matches(sc *ScanContext) (matches []Match) {
 	}
 	C.string_matches(sc.cptr, s.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		matches = append(matches, Match{ptr})
+		matches = append(matches, Match{ptr, s.rules})
 	}
 	return
 }
@@ -286,7 +289,7 @@ func (r *Rules) GetRules() (rules []Rule) {
 	ptrs := make([]*C.YR_RULE, int(size))
 	C.get_rules(r.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		rules = append(rules, Rule{ptr})
+		rules = append(rules, Rule{ptr, r})
 	}
 	return
 }
