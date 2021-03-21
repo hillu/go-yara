@@ -93,7 +93,11 @@ static void string_matches(YR_STRING* s, const YR_MATCH *matches[], int *n) {
 import "C"
 
 // Rule represents a single rule as part of a ruleset.
-type Rule struct{ cptr *C.YR_RULE }
+type Rule struct {
+	cptr *C.YR_RULE
+	// Save underlying YR_RULES from being cleaned due to GC
+	rules *Rules
+}
 
 // Identifier returns the rule's name.
 func (r *Rule) Identifier() string {
@@ -196,7 +200,11 @@ func (r *Rule) IsGlobal() bool {
 }
 
 // String represents a string as part of a rule.
-type String struct{ cptr *C.YR_STRING }
+type String struct {
+	cptr *C.YR_STRING
+	// Save underlying YR_RULES from being cleaned due to GC
+	rules *Rules
+}
 
 // Strings returns the rule's strings.
 func (r *Rule) Strings() (strs []String) {
@@ -208,7 +216,7 @@ func (r *Rule) Strings() (strs []String) {
 	ptrs := make([]*C.YR_STRING, int(size))
 	C.rule_strings(r.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		strs = append(strs, String{ptr})
+		strs = append(strs, String{ptr, r.rules})
 	}
 	return
 }
@@ -219,7 +227,11 @@ func (s *String) Identifier() string {
 }
 
 // Match represents a string match.
-type Match struct{ cptr *C.YR_MATCH }
+type Match struct {
+	cptr *C.YR_MATCH
+	// Save underlying YR_RULES from being cleaned due to GC
+	rules *Rules
+}
 
 // Matches returns all matches that have been recorded for the string.
 func (s *String) Matches() (matches []Match) {
@@ -231,7 +243,7 @@ func (s *String) Matches() (matches []Match) {
 	}
 	C.string_matches(s.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		matches = append(matches, Match{ptr})
+		matches = append(matches, Match{ptr, s.rules})
 	}
 	return
 }

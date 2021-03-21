@@ -143,7 +143,7 @@ func (s *Scanner) putCallbackData(matches *[]MatchRule) unsafe.Pointer {
 	} else {
 		sc = (*MatchRules)(matches)
 	}
-	ptr := callbackData.Put(makeScanCallbackContainer(sc))
+	ptr := callbackData.Put(makeScanCallbackContainer(sc, s.rules))
 	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
 	return ptr
 }
@@ -230,7 +230,7 @@ func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error) {
 func (s *Scanner) GetLastErrorRule() (r *Rule) {
 	ptr := C.yr_scanner_last_error_rule(s.cptr)
 	if ptr != nil {
-		r = &Rule{ptr}
+		r = &Rule{ptr, s.rules}
 	}
 	runtime.KeepAlive(s)
 	return
@@ -242,7 +242,7 @@ func (s *Scanner) GetLastErrorRule() (r *Rule) {
 func (s *Scanner) GetLastErrorString() (r *String) {
 	ptr := C.yr_scanner_last_error_string(s.cptr)
 	if ptr != nil {
-		r = &String{ptr}
+		r = &String{ptr, s.rules}
 	}
 	runtime.KeepAlive(s)
 	return
