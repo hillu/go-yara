@@ -7,7 +7,7 @@
 package yara
 
 import (
-	"bytes"
+	"errors"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -188,27 +188,19 @@ func TestScannerImportDataCallback(t *testing.T) {
 	runtime.GC()
 }
 
-func TestScannerLastError(t *testing.T) {
+type failingScanCallback struct{}
+
+func (*failingScanCallback) RuleMatching(*ScanContext, *Rule) (bool, error) {
+	return true, errors.New("go away")
+}
+
+func TestScannerError(t *testing.T) {
 	s := makeScanner(t, `
-		rule test { strings: $a = "abc" condition: #a>0 }
+		rule test { condition: true }
 		`)
-	// Repeat future match (YR_MAX_STRING_MATCHES + 1) times
-	buffer := bytes.Repeat([]byte(" abc "), 1000000+1)
 	var err error
-	if err = s.ScanMem(buffer); err == nil {
+	if err = s.SetCallback(&failingScanCallback{}).ScanMem([]byte{0, 0, 0, 0}); err == nil {
 		t.Fatal("ScanMem: did not fail")
 	}
 	t.Logf("ScanMem: got expected error, %s", err)
-	rule := s.GetLastErrorRule()
-	if rule == nil {
-		t.Error("GetLastErrorRule: returned no rule")
-	} else if rule.Identifier() != "test" {
-		t.Errorf("GetLastErrorRule: returned wrong rule %q", rule.Identifier())
-	}
-	str := s.GetLastErrorString()
-	if str == nil {
-		t.Error("GetLastErrorString: returned no string")
-	} else if str.Identifier() != "$a" {
-		t.Errorf("GetLastErrorString: returned wrong string %q", str.Identifier())
-	}
 }
