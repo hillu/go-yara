@@ -18,6 +18,7 @@ type block struct {
 type testIter struct {
 	data    []block
 	current int
+	filesize uint64
 }
 
 func (it *testIter) First() *MemoryBlock {
@@ -39,6 +40,10 @@ func (it *testIter) Next() *MemoryBlock {
 	}
 }
 
+func (it *testIter) Filesize() uint64 {
+	return it.filesize
+}
+
 func TestIterator(t *testing.T) {
 	rs := MustCompile(`
 rule t1 { condition: true }
@@ -48,7 +53,9 @@ rule t2 {
 strings: $a = "aaaa" $b = "bbbb"
 condition: $a at 0 and $b at 32 
 }
-
+rule t3 {
+condition: filesize < 20 
+}
 `, nil)
 	var mrs MatchRules
 	if err := rs.ScanMemBlocks(&testIter{}, 0, 0, &mrs); err != nil {
@@ -70,6 +77,7 @@ condition: $a at 0 and $b at 32
 			{0, []byte("aaaaaaaaaaaaaaaa")},
 			{32, []byte("bbbbbbbbbbbbbbbb")},
 		},
+		filesize: 64,
 	}, 0, 0, &mrs); err != nil {
 		t.Errorf("simple iterator scan (aaa..bbbb): %v", err)
 	} else {

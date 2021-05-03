@@ -16,6 +16,7 @@ uint8_t* memoryBlockFetchNull(YR_MEMORY_BLOCK*);
 
 YR_MEMORY_BLOCK* memoryBlockIteratorFirst(YR_MEMORY_BLOCK_ITERATOR*);
 YR_MEMORY_BLOCK* memoryBlockIteratorNext(YR_MEMORY_BLOCK_ITERATOR*);
+uint64_t memoryBlockIteratorFilesize(YR_MEMORY_BLOCK_ITERATOR*);
 */
 import "C"
 import (
@@ -29,6 +30,7 @@ import (
 type MemoryBlockIterator interface {
 	First() *MemoryBlock
 	Next() *MemoryBlock
+	Filesize() uint64
 }
 
 type memoryBlockIteratorContainer struct {
@@ -60,9 +62,10 @@ func makeMemoryBlockIteratorContainer(mbi MemoryBlockIterator) (c *memoryBlockIt
 // pool.
 func makeCMemoryBlockIterator(c *memoryBlockIteratorContainer) (cmbi *C.YR_MEMORY_BLOCK_ITERATOR) {
 	return &C.YR_MEMORY_BLOCK_ITERATOR{
-		context: callbackData.Put(c),
-		first:   C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
-		next:    C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
+		context:   callbackData.Put(c),
+		first:     C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
+		next:      C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
+		file_size: C.YR_MEMORY_BLOCK_ITERATOR_SIZE_FUNC(C.memoryBlockIteratorFilesize),
 	}
 }
 
@@ -147,4 +150,10 @@ func memoryBlockIteratorNext(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOC
 	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)
 	c.MemoryBlock = c.MemoryBlockIterator.Next()
 	return memoryBlockIteratorCommon(cmbi, c)
+}
+
+//export memoryBlockIteratorFilesize
+func memoryBlockIteratorFilesize(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) C.uint64_t {
+	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)
+	return C.uint64_t(c.MemoryBlockIterator.Filesize())
 }
