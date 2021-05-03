@@ -52,6 +52,11 @@ func (s *Iterator) Next() *yara.MemoryBlock {
 	}
 }
 
+func (s *Iterator) Filesize() uint64 {
+	end, _ := s.rs.Seek(0, io.SeekEnd)
+	return uint64(end)
+}
+
 func Example_ScanMemBlocks() {
 	// Set up a []byte-backed io.ReadSeeker
 	buf := make([]byte, 65536)

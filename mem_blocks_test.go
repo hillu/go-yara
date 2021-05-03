@@ -39,6 +39,15 @@ func (it *testIter) Next() *MemoryBlock {
 	}
 }
 
+type testIterWithFilesize struct {
+	testIter
+	filesize uint64
+}
+
+func (it *testIterWithFilesize) Filesize() uint64 {
+	return it.filesize
+}
+
 func TestIterator(t *testing.T) {
 	rs := MustCompile(`
 rule t1 { condition: true }
@@ -48,7 +57,12 @@ rule t2 {
 strings: $a = "aaaa" $b = "bbbb"
 condition: $a at 0 and $b at 32 
 }
-
+rule t3 {
+condition: filesize < 20 
+}
+rule t4 {
+condition: filesize >= 20
+}
 `, nil)
 	var mrs MatchRules
 	if err := rs.ScanMemBlocks(&testIter{}, 0, 0, &mrs); err != nil {
@@ -65,11 +79,14 @@ condition: $a at 0 and $b at 32
 		t.Logf("simple iterator scan (empty block): %+v", mrs)
 	}
 	mrs = nil
-	if err := rs.ScanMemBlocks(&testIter{
-		data: []block{
-			{0, []byte("aaaaaaaaaaaaaaaa")},
-			{32, []byte("bbbbbbbbbbbbbbbb")},
+	if err := rs.ScanMemBlocks(&testIterWithFilesize{
+		testIter: testIter{
+			data: []block{
+				{0, []byte("aaaaaaaaaaaaaaaa")},
+				{32, []byte("bbbbbbbbbbbbbbbb")},
+			},
 		},
+		filesize: 64,
 	}, 0, 0, &mrs); err != nil {
 		t.Errorf("simple iterator scan (aaa..bbbb): %v", err)
 	} else {
