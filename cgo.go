@@ -12,7 +12,9 @@ package yara
 /*
 #include <yara.h>
 #if YR_MAJOR_VERSION != 4
-#error YARA version 4 required
+#error YARA version 4.1 required
+#elif YR_MINOR_VERSION < 1
+#error YARA version 4.1 required
 #endif
 */
 import "C"
