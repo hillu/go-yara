@@ -30,6 +30,10 @@ import (
 type MemoryBlockIterator interface {
 	First() *MemoryBlock
 	Next() *MemoryBlock
+}
+
+type MemoryBlockIteratorWithFilesize interface {
+	MemoryBlockIterator
 	Filesize() uint64
 }
 
@@ -61,12 +65,15 @@ func makeMemoryBlockIteratorContainer(mbi MemoryBlockIterator) (c *memoryBlockIt
 // The caller is responsible to remove cmbi.context from callbackData
 // pool.
 func makeCMemoryBlockIterator(c *memoryBlockIteratorContainer) (cmbi *C.YR_MEMORY_BLOCK_ITERATOR) {
-	return &C.YR_MEMORY_BLOCK_ITERATOR{
+	cmbi = &C.YR_MEMORY_BLOCK_ITERATOR{
 		context:   callbackData.Put(c),
 		first:     C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorFirst),
 		next:      C.YR_MEMORY_BLOCK_ITERATOR_FUNC(C.memoryBlockIteratorNext),
-		file_size: C.YR_MEMORY_BLOCK_ITERATOR_SIZE_FUNC(C.memoryBlockIteratorFilesize),
 	}
+	if _, implementsFilesize := c.MemoryBlockIterator.(MemoryBlockIteratorWithFilesize); implementsFilesize {
+		cmbi.file_size = C.YR_MEMORY_BLOCK_ITERATOR_SIZE_FUNC(C.memoryBlockIteratorFilesize)
+	}
+	return cmbi
 }
 
 func (c *memoryBlockIteratorContainer) realloc(size int) {
@@ -155,5 +162,5 @@ func memoryBlockIteratorNext(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOC
 //export memoryBlockIteratorFilesize
 func memoryBlockIteratorFilesize(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) C.uint64_t {
 	c := callbackData.Get(cmbi.context).(*memoryBlockIteratorContainer)
-	return C.uint64_t(c.MemoryBlockIterator.Filesize())
+	return C.uint64_t(c.MemoryBlockIterator.(MemoryBlockIteratorWithFilesize).Filesize())
 }
