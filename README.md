@@ -12,7 +12,7 @@ the `yara-python` implementation.
 
 ## Build/Installation
 
-On Unix-like systems, _libyara_ version 4, corresponding header files,
+On Unix-like systems, _libyara_ version 4.1, corresponding header files,
 and _pkg-config_ must be installed. Adding _go-yara_ v4 to a project
 with Go Modules enabled, simply add the proper dependency…
 
@@ -58,9 +58,12 @@ export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
 go install -tags yara_no_pkg_config github.com/hillu/go-yara
 ```
 
-## YARA 4.x vs. earlier versions
+## YARA 4.1.x vs. earlier versions
 
-This version of _go-yara_ can only be used with YARA 4.0 or later.
+This version of _go-yara_ can only be used with YARA 4.1 or later.
+
+Version of _go-yara_ compatible with YARA 4.0.x are available via the
+`v4.0.x` branch or tagged `v4.0.*` releases.
 
 Versions of _go-yara_ compatible with YARA 3.11 are available via the
 `v3.x` branch or tagged `v3.*` releases.
