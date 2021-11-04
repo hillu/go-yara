@@ -112,8 +112,8 @@ import "unsafe"
 // Rule represents a single rule as part of a ruleset.
 type Rule struct {
 	cptr *C.YR_RULE
-	// Save underlying YR_RULES from being discarded through GC
-	rules *Rules
+	// Save underlying YR_RULES / YR_COMPILER from being discarded through GC
+	owner interface{}
 }
 
 // Identifier returns the rule's name.
@@ -189,8 +189,8 @@ func (r *Rule) IsGlobal() bool {
 // String represents a string as part of a rule.
 type String struct {
 	cptr *C.YR_STRING
-	// Save underlying YR_RULES from being discarded through GC
-	rules *Rules
+	// Save underlying YR_RULES / YR_COMPILER from being discarded through GC
+	owner interface{}
 }
 
 // Strings returns the rule's strings.
@@ -203,7 +203,7 @@ func (r *Rule) Strings() (strs []String) {
 	ptrs := make([]*C.YR_STRING, int(size))
 	C.rule_strings(r.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		strs = append(strs, String{ptr, r.rules})
+		strs = append(strs, String{ptr, r.owner})
 	}
 	return
 }
@@ -217,7 +217,7 @@ func (s *String) Identifier() string {
 type Match struct {
 	cptr *C.YR_MATCH
 	// Save underlying YR_RULES from being discarded through GC
-	rules *Rules
+	owner interface{}
 }
 
 // Matches returns all matches that have been recorded for the string.
@@ -233,7 +233,7 @@ func (s *String) Matches(sc *ScanContext) (matches []Match) {
 	}
 	C.string_matches(sc.cptr, s.cptr, &ptrs[0], &size)
 	for _, ptr := range ptrs {
-		matches = append(matches, Match{ptr, s.rules})
+		matches = append(matches, Match{ptr, s.owner})
 	}
 	return
 }
