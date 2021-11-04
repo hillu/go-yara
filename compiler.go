@@ -37,6 +37,11 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, rule
 		Line:     int(linenumber),
 		Text:     C.GoString(message),
 	}
+	if rule != nil {
+		// Rule object implicitly relies on the compiler object and is destroyed when the compiler is destroyed.
+		// Save a reference to the compiler to prevent that from happening.
+		msg.Rule = &Rule{cptr: rule, owner: c}
+	}
 	switch errorLevel {
 	case C.YARA_ERROR_LEVEL_ERROR:
 		c.Errors = append(c.Errors, msg)
@@ -65,6 +70,7 @@ type CompilerMessage struct {
 	Filename string
 	Line     int
 	Text     string
+	Rule     *Rule
 }
 
 // NewCompiler creates a YARA compiler.
