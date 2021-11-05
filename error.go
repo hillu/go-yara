@@ -88,4 +88,5 @@ var errorStrings = map[int]string{
 	C.ERROR_WRITING_FILE:                   "error writing file",
 	C.ERROR_INVALID_MODIFIER:               "invalid modifier",
 	C.ERROR_DUPLICATED_MODIFIER:            "duplicated modifier",
+	C.ERROR_BLOCK_NOT_READY:                "block not ready",
 }
