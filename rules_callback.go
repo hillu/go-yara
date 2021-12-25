@@ -64,6 +64,12 @@ type ScanCallbackModuleImportFinished interface {
 	ModuleImported(*ScanContext, *Object) (bool, error)
 }
 
+/// ScanCAllbackConsoleLog can be used to implement custom functions
+/// to handle the console.log feature introduced in YARA 4.2.
+type ScanCallbackConsoleLog interface {
+	ConsoleLog(*ScanContext, string)
+}
+
 // scanCallbackContainer is used by to pass a ScanCallback (and
 // associated data) between ScanXxx methods and scanCallbackFunc(). It
 // stores the public callback interface and a list of malloc()'d C
@@ -136,6 +142,10 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 	case C.CALLBACK_MSG_MODULE_IMPORTED:
 		if c, ok := cbc.ScanCallback.(ScanCallbackModuleImportFinished); ok {
 			abort, err = c.ModuleImported(s, &Object{(*C.YR_OBJECT)(messageData)})
+		}
+	case C.CALLBACK_MSG_CONSOLE_LOG:
+		if c, ok := cbc.ScanCallback.(ScanCallbackConsoleLog); ok {
+			c.ConsoleLog(s, C.GoString((*C.char)(messageData)))
 		}
 	}
 

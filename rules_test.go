@@ -248,6 +248,7 @@ type testCallback struct {
 	modules    map[string]struct{}
 	matched    map[string]struct{}
 	notMatched map[string]struct{}
+	logged     []string
 }
 
 func newTestCallback(t *testing.T) *testCallback {
@@ -256,6 +257,7 @@ func newTestCallback(t *testing.T) *testCallback {
 		make(map[string]struct{}),
 		make(map[string]struct{}),
 		make(map[string]struct{}),
+		nil,
 	}
 }
 
@@ -285,6 +287,9 @@ func (c *testCallback) ImportModule(_ *ScanContext, s string) ([]byte, bool, err
 func (c *testCallback) ModuleImported(*ScanContext, *Object) (bool, error) {
 	c.t.Log("ModuleImported callback called")
 	return false, nil
+}
+func (c *testCallback) ConsoleLog(_ *ScanContext, s string) {
+	c.logged = append(c.logged, s)
 }
 
 func TestImportDataCallback(t *testing.T) {
@@ -317,4 +322,19 @@ func TestImportDataCallback(t *testing.T) {
 		t.Errorf("ScanFinished was not called")
 	}
 	runtime.GC()
+}
+
+func TestConsoleCallback(t *testing.T) {
+	cb := newTestCallback(t)
+	r := makeRules(t, `
+        import "console"
+		rule t { condition: console.log("hello world") }
+        `)
+
+	if err := r.ScanMem([]byte(""), 0, 0, cb); err != nil {
+		t.Error(err)
+	}
+	if len(cb.logged) < 1 || cb.logged[0] != "hello world" {
+		t.Errorf("console log does not containi expected hello world string: %v", cb.logged)
+	}
 }

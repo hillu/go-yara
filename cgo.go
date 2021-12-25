@@ -8,7 +8,7 @@ package yara
 
 // #cgo !yara_no_pkg_config,!yara_static  pkg-config: yara
 // #cgo !yara_no_pkg_config,yara_static   pkg-config: --static yara
-// #cgo yara_no_pkg_config                LDFLAGS:    -lyara
+// #cgo yara_no_pkg_config                LDFLAGS:    -lyara -lm -lcrypto
 /*
 #include <yara.h>
 #if YR_VERSION_HEX < 0x040100
