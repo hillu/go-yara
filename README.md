@@ -3,7 +3,7 @@
 # go-yara
 
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/hillu/go-yara/v4)](https://pkg.go.dev/github.com/hillu/go-yara/v4)
-[![Travis](https://travis-ci.org/hillu/go-yara.svg?branch=master)](https://travis-ci.org/hillu/go-yara)
+[![buildtest](https://github.com/hillu/go-yara/actions/workflows/buildtest.yml/badge.svg)](https://github.com/hillu/go-yara/actions/workflows/buildtest.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hillu/go-yara)](https://goreportcard.com/report/github.com/hillu/go-yara)
 
 Go bindings for [YARA](https://virustotal.github.io/yara/), staying as
