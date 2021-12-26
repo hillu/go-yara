@@ -1,0 +1,43 @@
+name: Build+Test
+
+on: [ push, pull_request ]
+
+jobs:
+  buildtest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install stuff
+      run: |
+        sudo apt-get -qqy update
+        sudo apt-get -qqy install wget ca-certificates build-essential bison flex automake autoconf libtool pkg-config
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Show info about build environment
+      run: |
+        pwd
+        env
+        cat /etc/debian_version
+        go version
+        gcc --version
+
+    - name: Build YARA from source
+      run: |
+        YARA_VERSION=4.1.3
+        wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v${YARA_VERSION}.tar.gz | tar -C .. -xzf -
+        ( cd ../yara-${YARA_VERSION} && ./bootstrap.sh )
+        mkdir -p ../yara-build
+        ( cd ../yara-build && \
+          ../yara-${YARA_VERSION}/configure --disable-shared --prefix=${HOME}/prefix )
+        make -C ../yara-build install
+        find ${HOME}/prefix
+
+    - name: Build/Test
+      run: |
+        export PKG_CONFIG_PATH=${HOME}/prefix/lib/pkgconfig
+        go test -v -tags yara_static ./...
