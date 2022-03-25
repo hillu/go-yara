@@ -31,7 +31,7 @@ import (
 
 //export compilerCallback
 func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, rule *C.YR_RULE, message *C.char, userData unsafe.Pointer) {
-	c := callbackData.Get(userData).(*Compiler)
+	c := cgoHandle(userData).Value().(*Compiler)
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
@@ -60,7 +60,7 @@ type Compiler struct {
 	Errors   []CompilerMessage
 	Warnings []CompilerMessage
 	// used for include callback
-	callbackData unsafe.Pointer
+	callbackData cgoHandle
 	cptr         *C.YR_COMPILER
 }
 
@@ -95,9 +95,9 @@ func (c *Compiler) Destroy() {
 	runtime.SetFinalizer(c, nil)
 }
 
-func (c *Compiler) setCallbackData(ptr unsafe.Pointer) {
-	if c.callbackData != nil {
-		callbackData.Delete(c.callbackData)
+func (c *Compiler) setCallbackData(ptr cgoHandle) {
+	if c.callbackData != 0 {
+		c.callbackData.Delete()
 	}
 	c.callbackData = ptr
 }
@@ -118,9 +118,9 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	}
 	filename := C.CString(file.Name())
 	defer C.free(unsafe.Pointer(filename))
-	id := callbackData.Put(c)
-	defer callbackData.Delete(id)
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), id)
+	id := cgoNewHandle(c)
+	defer id.Delete()
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(id))
 	numErrors := int(C.yr_compiler_add_fd(c.cptr, (C.YR_FILE_DESCRIPTOR)(file.Fd()), ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -148,9 +148,9 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	}
 	crules := C.CString(rules)
 	defer C.free(unsafe.Pointer(crules))
-	id := callbackData.Put(c)
-	defer callbackData.Delete(id)
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), id)
+	id := cgoNewHandle(c)
+	defer id.Delete()
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(id))
 	numErrors := int(C.yr_compiler_add_string(c.cptr, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -211,7 +211,7 @@ func (c *Compiler) GetRules() (*Rules, error) {
 
 //export includeCallback
 func includeCallback(name, filename, namespace *C.char, userData unsafe.Pointer) *C.char {
-	callbackFunc := callbackData.Get(userData).(CompilerIncludeFunc)
+	callbackFunc := cgoHandle(userData).Value().(CompilerIncludeFunc)
 	if buf := callbackFunc(
 		C.GoString(name), C.GoString(filename), C.GoString(namespace),
 	); buf != nil {
@@ -255,13 +255,13 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 		c.DisableIncludes()
 		return
 	}
-	id := callbackData.Put(cb)
+	id := cgoNewHandle(cb)
 	c.setCallbackData(id)
 	C.yr_compiler_set_include_callback(
 		c.cptr,
 		C.YR_COMPILER_INCLUDE_CALLBACK_FUNC(C.includeCallback),
 		C.YR_COMPILER_INCLUDE_FREE_FUNC(C.freeCallback),
-		id,
+		unsafe.Pointer(id),
 	)
 	runtime.KeepAlive(c)
 	return
@@ -271,7 +271,7 @@ func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc) {
 // See yr_compiler_set_include_callbacks.
 func (c *Compiler) DisableIncludes() {
 	C.yr_compiler_set_include_callback(c.cptr, nil, nil, nil)
-	c.setCallbackData(nil)
+	c.setCallbackData(0)
 	runtime.KeepAlive(c)
 	return
 }

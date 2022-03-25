@@ -20,7 +20,7 @@ func streamRead(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Pointe
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
-	reader := callbackData.Get(userData).(io.Reader)
+	reader := cgoHandle(userData).Value().(io.Reader)
 	buf := make([]byte, 0)
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hdr.Data = uintptr(ptr)
@@ -53,7 +53,7 @@ func streamWrite(ptr unsafe.Pointer, size, nmemb C.size_t, userData unsafe.Point
 	if size == 0 || nmemb == 0 {
 		return nmemb
 	}
-	writer := callbackData.Get(userData).(io.Writer)
+	writer := cgoHandle(userData).Value().(io.Writer)
 	buf := make([]byte, 0)
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
 	hdr.Data = uintptr(ptr)
