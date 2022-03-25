@@ -6,8 +6,6 @@
 
 package yara
 
-var callbackData = makecbPool(256)
-
 func toint64(number interface{}) int64 {
 	switch number.(type) {
 	case int:

@@ -14,6 +14,7 @@ import "C"
 import (
 	"reflect"
 	"runtime"
+	"runtime/cgo"
 	"unsafe"
 )
 
@@ -103,7 +104,7 @@ func (c *scanCallbackContainer) finalize() {
 
 //export scanCallbackFunc
 func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userData unsafe.Pointer) C.int {
-	cbc, ok := callbackData.Get(userData).(*scanCallbackContainer)
+	cbc, ok := cgo.Handle(userData).Value().(*scanCallbackContainer)
 	s := &ScanContext{cptr: ctx}
 	if !ok {
 		return C.CALLBACK_ERROR

@@ -27,6 +27,7 @@ import "C"
 import (
 	"errors"
 	"runtime"
+	"runtime/cgo"
 	"time"
 	"unsafe"
 )
@@ -127,16 +128,15 @@ func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 }
 
 // putCallbackData stores the scanner's callback object in
-// callbackData, returning a pointer. If no callback object has been
+// a cgo.Handle. If no callback object has been
 // set, it is initialized with the pointer to an empty ScanRules
-// object. The object must be removed from callbackData by the calling
-// ScanXxxx function.
-func (s *Scanner) putCallbackData() unsafe.Pointer {
+// object. The handle must be deleted by the calling ScanXxxx function.
+func (s *Scanner) putCallbackData() cgo.Handle {
 	if _, ok := s.Callback.(ScanCallback); !ok {
 		s.Callback = &MatchRules{}
 	}
-	ptr := callbackData.Put(makeScanCallbackContainer(s.Callback, s.rules))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), ptr)
+	ptr := cgo.NewHandle(makeScanCallbackContainer(s.Callback, s.rules))
+	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(ptr))
 	return ptr
 }
 
@@ -151,7 +151,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	}
 
 	cbPtr := s.putCallbackData()
-	defer callbackData.Delete(cbPtr)
+	defer cbPtr.Delete()
 
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem(
@@ -171,7 +171,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 	defer C.free(unsafe.Pointer(cfilename))
 
 	cbPtr := s.putCallbackData()
-	defer callbackData.Delete(cbPtr)
+	defer cbPtr.Delete()
 
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_file(
@@ -188,7 +188,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 // SetCAllback, it is initialized with an empty MatchRules object.
 func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	cbPtr := s.putCallbackData()
-	defer callbackData.Delete(cbPtr)
+	defer cbPtr.Delete()
 
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C._yr_scanner_scan_fd(
@@ -205,7 +205,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 // SetCAllback, it is initialized with an empty MatchRules object.
 func (s *Scanner) ScanProc(pid int) (err error) {
 	cbPtr := s.putCallbackData()
-	defer callbackData.Delete(cbPtr)
+	defer cbPtr.Delete()
 
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_proc(
@@ -224,10 +224,10 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
-	defer callbackData.Delete(cmbi.context)
+	defer cgo.Handle(cmbi.context).Delete()
 
 	cbPtr := s.putCallbackData()
-	defer callbackData.Delete(cbPtr)
+	defer cbPtr.Delete()
 
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem_blocks(
