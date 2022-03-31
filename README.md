@@ -62,7 +62,7 @@ go install -tags yara_no_pkg_config github.com/hillu/go-yara
 
 This version of _go-yara_ can only be used with YARA 4.2 or later.
 
-Version of _go-yara_ compatible with YARA 4.0.x are available via the
+Version of _go-yara_ compatible with YARA 4.1.x are available via the
 `v4.1.x` branch or tagged `v4.1.*` releases.
 
 Version of _go-yara_ compatible with YARA 4.0.x are available via the
