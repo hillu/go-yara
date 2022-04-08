@@ -8,27 +8,7 @@ package yara
 
 /*
 #include <yara.h>
-
-#ifdef _WIN32
-#include <stdint.h>
-// Helper function that is merely used to cast fd from int to HANDLE.
-// CGO treats HANDLE (void*) to an unsafe.Pointer. This confuses the
-// go1.4 garbage collector, leading to runtime errors such as:
-//
-// runtime: garbage collector found invalid heap pointer *(0x5b80ff14+0x4)=0xa0 s=nil
-int _yr_rules_scan_fd(
-    YR_RULES* rules,
-    int fd,
-    int flags,
-    YR_CALLBACK_FUNC callback,
-    void* user_data,
-    int timeout)
-{
-  return yr_rules_scan_fd(rules, (YR_FILE_DESCRIPTOR)(intptr_t)fd, flags, callback, user_data, timeout);
-}
-#else
-#define _yr_rules_scan_fd yr_rules_scan_fd
-#endif
+#include "compat.h"
 
 size_t streamRead(void* ptr, size_t size, size_t nmemb, void* user_data);
 size_t streamWrite(void* ptr, size_t size, size_t nmemb, void* user_data);

@@ -8,18 +8,7 @@ package yara
 
 /*
 #include <yara.h>
-
-#ifdef _WIN32
-#include <stdint.h>
-int _yr_scanner_scan_fd(
-    YR_SCANNER* scanner,
-    int fd)
-{
-  return yr_scanner_scan_fd(scanner, (YR_FILE_DESCRIPTOR)(intptr_t)fd);
-}
-#else
-#define _yr_scanner_scan_fd yr_scanner_scan_fd
-#endif
+#include "compat.h"
 
 int scanCallbackFunc(YR_SCAN_CONTEXT*, int, void*, void*);
 */

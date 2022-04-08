@@ -7,14 +7,8 @@
 package yara
 
 /*
-#ifdef _WIN32
-#define fdopen _fdopen
-#define dup _dup
-#endif
-#include <stdio.h>
-#include <unistd.h>
-
 #include <yara.h>
+#include "compat.h"
 
 void compilerCallback(int, char*, int, YR_RULE*, char*, void*);
 char* includeCallback(char*, char*, char*, void*);
@@ -121,7 +115,7 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	id := cgoNewHandle(c)
 	defer id.Delete()
 	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(id))
-	numErrors := int(C.yr_compiler_add_fd(c.cptr, (C.YR_FILE_DESCRIPTOR)(file.Fd()), ns, filename))
+	numErrors := int(C._yr_compiler_add_fd(c.cptr, C.int(file.Fd()), ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
 		msg := C.GoString(C.yr_compiler_get_error_message(
