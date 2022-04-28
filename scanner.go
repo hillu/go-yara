@@ -204,7 +204,7 @@ func (s *Scanner) ScanProc(pid int) (err error) {
 	return
 }
 
-// ScahMemBlocks scans over a MemoryBlockIterator using the scanner.
+// ScanMemBlocks scans over a MemoryBlockIterator using the scanner.
 //
 // If no callback object has been set for the scanner using
 // SetCAllback, it is initialized with an empty MatchRules object.
