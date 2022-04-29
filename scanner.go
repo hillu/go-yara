@@ -119,11 +119,11 @@ func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 // a cgoHandle. If no callback object has been
 // set, it is initialized with the pointer to an empty ScanRules
 // object. The handle must be deleted by the calling ScanXxxx function.
-func (s *Scanner) putCallbackData() cgoHandle {
+func (s *Scanner) putCallbackData() *cgoHandle {
 	if _, ok := s.Callback.(ScanCallback); !ok {
 		s.Callback = &MatchRules{}
 	}
-	ptr := cgoNewHandle(makeScanCallbackContainer(s.Callback, s.rules))
+	ptr := newCgoHandle(makeScanCallbackContainer(s.Callback, s.rules))
 	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(ptr))
 	return ptr
 }
@@ -212,7 +212,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
-	defer cgoHandle(cmbi.context).Delete()
+	defer loadCgoHandle(cmbi.context).Delete()
 
 	cbPtr := s.putCallbackData()
 	defer cbPtr.Delete()

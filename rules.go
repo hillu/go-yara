@@ -77,7 +77,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-	id := cgoNewHandle(makeScanCallbackContainer(cb, r))
+	id := newCgoHandle(makeScanCallbackContainer(cb, r))
 	defer id.Delete()
 	err = newError(C.yr_rules_scan_mem(
 		r.cptr,
@@ -85,7 +85,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 		C.size_t(len(buf)),
 		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(id),
+		id.Pointer(),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
 	return
@@ -97,14 +97,14 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-	id := cgoNewHandle(makeScanCallbackContainer(cb, r))
+	id := newCgoHandle(makeScanCallbackContainer(cb, r))
 	defer id.Delete()
 	err = newError(C.yr_rules_scan_file(
 		r.cptr,
 		cfilename,
 		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(id),
+		id.Pointer(),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
 	return
@@ -114,14 +114,14 @@ func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration
 // emitted by libyara, the corresponding method on the ScanCallback
 // object is called.
 func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	id := cgoNewHandle(makeScanCallbackContainer(cb, r))
+	id := newCgoHandle(makeScanCallbackContainer(cb, r))
 	defer id.Delete()
 	err = newError(C._yr_rules_scan_fd(
 		r.cptr,
 		C.int(fd),
 		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(id),
+		id.Pointer(),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
 	return
@@ -131,14 +131,14 @@ func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Dur
 // every event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
 func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
-	id := cgoNewHandle(makeScanCallbackContainer(cb, r))
+	id := newCgoHandle(makeScanCallbackContainer(cb, r))
 	defer id.Delete()
 	err = newError(C.yr_rules_scan_proc(
 		r.cptr,
 		C.int(pid),
 		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(id),
+		id.Pointer(),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
 	return
@@ -151,15 +151,15 @@ func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout 
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
-	defer cgoHandle(cmbi.context).Delete()
-	id := cgoNewHandle(makeScanCallbackContainer(cb, r))
+	defer loadCgoHandle(cmbi.context).Delete()
+	id := newCgoHandle(makeScanCallbackContainer(cb, r))
 	defer id.Delete()
 	err = newError(C.yr_rules_scan_mem_blocks(
 		r.cptr,
 		cmbi,
 		flags.withReportFlags(cb),
 		C.YR_CALLBACK_FUNC(C.scanCallbackFunc),
-		unsafe.Pointer(id),
+		id.Pointer(),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
 	return
@@ -188,15 +188,12 @@ func LoadRules(filename string) (*Rules, error) {
 
 // Write writes a compiled ruleset to an io.Writer.
 func (r *Rules) Write(wr io.Writer) (err error) {
-	id := cgoNewHandle(wr)
+	id := newCgoHandle(wr)
 	defer id.Delete()
 
 	stream := C.YR_STREAM{
-		write: C.YR_STREAM_WRITE_FUNC(C.streamWrite),
-		// The complaint from go vet about possible misuse of
-		// unsafe.Pointer is wrong: user_data will be interpreted as
-		// an uintptr on the other side of the callback
-		user_data: unsafe.Pointer(id),
+		write:     C.YR_STREAM_WRITE_FUNC(C.streamWrite),
+		user_data: id.Pointer(),
 	}
 	err = newError(C.yr_rules_save_stream(r.cptr, &stream))
 	runtime.KeepAlive(r)
@@ -205,14 +202,12 @@ func (r *Rules) Write(wr io.Writer) (err error) {
 
 // ReadRules retrieves a compiled ruleset from an io.Reader.
 func ReadRules(rd io.Reader) (*Rules, error) {
-	id := cgoNewHandle(rd)
+	id := newCgoHandle(rd)
 	defer id.Delete()
 
 	stream := C.YR_STREAM{
-		read: C.YR_STREAM_READ_FUNC(C.streamRead),
-		// The complaint from go vet about possible misuse of
-		// unsafe.Pointer is wrong, see above.
-		user_data: unsafe.Pointer(id),
+		read:      C.YR_STREAM_READ_FUNC(C.streamRead),
+		user_data: id.Pointer(),
 	}
 	r := &Rules{}
 	if err := newError(C.yr_rules_load_stream(&stream, &(r.cptr))); err != nil {
