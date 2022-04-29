@@ -36,6 +36,9 @@ type Scanner struct {
 	Callback ScanCallback
 	// Scan flags are set just before scanning.
 	flags ScanFlags
+	// userData stores handle of the currently set callback object. It is
+	// allocated using malloc so that the GC does not mess with it.
+	userData *cgoHandle
 }
 
 // NewScanner creates a YARA scanner.
@@ -44,7 +47,8 @@ func NewScanner(r *Rules) (*Scanner, error) {
 	if err := newError(C.yr_scanner_create(r.cptr, &yrScanner)); err != nil {
 		return nil, err
 	}
-	s := &Scanner{cptr: yrScanner, rules: r}
+	s := &Scanner{cptr: yrScanner, rules: r, userData: (*cgoHandle)(C.malloc(C.size_t(unsafe.Sizeof(cgoHandle(0)))))}
+	*s.userData = 0
 	runtime.SetFinalizer(s, (*Scanner).Destroy)
 	return s, nil
 }
@@ -56,6 +60,10 @@ func (s *Scanner) Destroy() {
 	if s.cptr != nil {
 		C.yr_scanner_destroy(s.cptr)
 		s.cptr = nil
+	}
+	if s.userData != nil {
+		C.free(unsafe.Pointer(s.userData))
+		s.userData = nil
 	}
 	runtime.SetFinalizer(s, nil)
 }
@@ -119,13 +127,16 @@ func (s *Scanner) SetCallback(cb ScanCallback) *Scanner {
 // a cgoHandle. If no callback object has been
 // set, it is initialized with the pointer to an empty ScanRules
 // object. The handle must be deleted by the calling ScanXxxx function.
-func (s *Scanner) putCallbackData() cgoHandle {
+func (s *Scanner) putCallbackData() {
 	if _, ok := s.Callback.(ScanCallback); !ok {
 		s.Callback = &MatchRules{}
 	}
-	ptr := cgoNewHandle(makeScanCallbackContainer(s.Callback, s.rules))
-	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(ptr))
-	return ptr
+	if *s.userData != 0 {
+		s.userData.Delete()
+		*s.userData = 0
+	}
+	*s.userData = cgoNewHandle(makeScanCallbackContainer(s.Callback, s.rules))
+	C.yr_scanner_set_callback(s.cptr, C.YR_CALLBACK_FUNC(C.scanCallbackFunc), unsafe.Pointer(s.userData))
 }
 
 // ScanMem scans an in-memory buffer using the scanner.
@@ -137,10 +148,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	if len(buf) > 0 {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
-
-	cbPtr := s.putCallbackData()
-	defer cbPtr.Delete()
-
+	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem(
 		s.cptr,
@@ -157,10 +165,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 func (s *Scanner) ScanFile(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
-
-	cbPtr := s.putCallbackData()
-	defer cbPtr.Delete()
-
+	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_file(
 		s.cptr,
@@ -175,9 +180,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 // If no callback object has been set for the scanner using
 // SetCAllback, it is initialized with an empty MatchRules object.
 func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
-	cbPtr := s.putCallbackData()
-	defer cbPtr.Delete()
-
+	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C._yr_scanner_scan_fd(
 		s.cptr,
@@ -192,9 +195,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 // If no callback object has been set for the scanner using
 // SetCAllback, it is initialized with an empty MatchRules object.
 func (s *Scanner) ScanProc(pid int) (err error) {
-	cbPtr := s.putCallbackData()
-	defer cbPtr.Delete()
-
+	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_proc(
 		s.cptr,
@@ -213,10 +214,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
 	defer cgoHandle(cmbi.context).Delete()
-
-	cbPtr := s.putCallbackData()
-	defer cbPtr.Delete()
-
+	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem_blocks(
 		s.cptr,

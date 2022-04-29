@@ -103,7 +103,7 @@ func (c *scanCallbackContainer) finalize() {
 
 //export scanCallbackFunc
 func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userData unsafe.Pointer) C.int {
-	cbc, ok := cgoHandle(userData).Value().(*scanCallbackContainer)
+	cbc, ok := cgoHandle(*(*uintptr)(userData)).Value().(*scanCallbackContainer)
 	s := &ScanContext{cptr: ctx}
 	if !ok {
 		return C.CALLBACK_ERROR
