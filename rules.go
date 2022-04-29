@@ -88,6 +88,7 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 		unsafe.Pointer(&userData),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
+	runtime.KeepAlive(buf)
 	return
 }
 
@@ -162,6 +163,8 @@ func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout 
 		unsafe.Pointer(&userData),
 		C.int(timeout/time.Second)))
 	runtime.KeepAlive(r)
+	runtime.KeepAlive(mbi)
+	runtime.KeepAlive(cmbi)
 	return
 }
 

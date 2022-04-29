@@ -155,6 +155,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 		ptr,
 		C.size_t(len(buf))))
 	runtime.KeepAlive(s)
+	runtime.KeepAlive(buf)
 	return
 }
 
@@ -221,6 +222,8 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 		cmbi,
 	))
 	runtime.KeepAlive(s)
+	runtime.KeepAlive(mbi)
+	runtime.KeepAlive(cmbi)
 	return
 }
 
