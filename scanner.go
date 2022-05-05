@@ -214,7 +214,8 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
-	defer cgoHandle(cmbi.context).Delete()
+	defer C.free(cmbi.context)
+	defer ((*cgoHandle)(cmbi.context)).Delete()
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
 	err = newError(C.yr_scanner_scan_mem_blocks(

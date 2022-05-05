@@ -152,7 +152,8 @@ func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout 
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
 	cmbi := makeCMemoryBlockIterator(c)
-	defer cgoHandle(cmbi.context).Delete()
+	defer C.free(cmbi.context)
+	defer ((*cgoHandle)(cmbi.context)).Delete()
 	userData := cgoNewHandle(makeScanCallbackContainer(cb, r))
 	defer userData.Delete()
 	err = newError(C.yr_rules_scan_mem_blocks(
