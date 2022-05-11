@@ -62,6 +62,9 @@ func (s *Scanner) Destroy() {
 		s.cptr = nil
 	}
 	if s.userData != nil {
+		if *s.userData != 0 {
+			s.userData.Delete()
+		}
 		C.free(unsafe.Pointer(s.userData))
 		s.userData = nil
 	}
