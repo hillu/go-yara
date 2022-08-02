@@ -95,6 +95,11 @@ func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration, cb S
 // ScanFile scans a file using the ruleset. For every
 // event emitted by libyara, the corresponding method on the
 // ScanCallback object is called.
+//
+// Note that the filename is passed as-is to the YARA library and may
+// not be processed in a sensible way. It is recommended to avoid this
+// function and to obtain an os.File handle f using os.Open() and use
+// ScanFileDescriptor(f.Fd(), …) instead.
 func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))

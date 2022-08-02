@@ -166,6 +166,11 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 //
 // If no callback object has been set for the scanner using
 // SetCAllback, it is initialized with an empty MatchRules object.
+//
+// Note that the filename is passed as-is to the YARA library and may
+// not be processed in a sensible way. It is recommended to avoid this
+// function and to obtain an os.File handle f using os.Open() and use
+// ScanFileDescriptor(f.Fd()) instead.
 func (s *Scanner) ScanFile(filename string) (err error) {
 	cfilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cfilename))
