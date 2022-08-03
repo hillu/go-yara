@@ -58,6 +58,10 @@ export CGO_LDFLAGS="-L${YARA_SRC}/libyara/.libs -lyara"
 go install -tags yara_no_pkg_config github.com/hillu/go-yara
 ```
 
+If _libyara_ has been linked against other libraries (e.g.
+_libcrypto_, _libmagic_) and a static build is performed, these
+libraries also need to be added to `CGO_LDFLAGS`.
+
 ## YARA 4.1.x vs. earlier versions
 
 This version of _go-yara_ can only be used with YARA 4.2 or later.
