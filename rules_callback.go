@@ -9,6 +9,11 @@ package yara
 /*
 #include <stdlib.h>
 #include <yara.h>
+
+// rules_table is part of a union and as such not reachable from go code.
+static YR_RULE* find_rule(YR_RULES* r, uint rule_idx) {
+	return &r->rules_table[rule_idx];
+}
 */
 import "C"
 import (
@@ -68,6 +73,12 @@ type ScanCallbackModuleImportFinished interface {
 /// to handle the console.log feature introduced in YARA 4.2.
 type ScanCallbackConsoleLog interface {
 	ConsoleLog(*ScanContext, string)
+}
+
+// ScanCallbackTooManyMatches can be used to receive information about
+// strings that match too many times.
+type ScanCallbackTooManyMatches interface {
+	TooManyMatches(*ScanContext, *Rule, string) (bool, error)
 }
 
 // scanCallbackContainer is used by to pass a ScanCallback (and
@@ -146,6 +157,15 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 	case C.CALLBACK_MSG_CONSOLE_LOG:
 		if c, ok := cbc.ScanCallback.(ScanCallbackConsoleLog); ok {
 			c.ConsoleLog(s, C.GoString((*C.char)(messageData)))
+		}
+	case C.CALLBACK_MSG_TOO_MANY_MATCHES:
+		if c, ok := cbc.ScanCallback.(ScanCallbackTooManyMatches); ok {
+			yrString := String{(*C.YR_STRING)(messageData), cbc.rules}
+			rule := &Rule{
+				cptr:  C.find_rule(cbc.rules.cptr, yrString.cptr.rule_idx),
+				owner: cbc.rules,
+			}
+			abort, err = c.TooManyMatches(s, rule, yrString.Identifier())
 		}
 	}
 
