@@ -69,8 +69,8 @@ type ScanCallbackModuleImportFinished interface {
 	ModuleImported(*ScanContext, *Object) (bool, error)
 }
 
-/// ScanCAllbackConsoleLog can be used to implement custom functions
-/// to handle the console.log feature introduced in YARA 4.2.
+// ScanCallbackConsoleLog can be used to implement custom functions
+// to handle the console.log feature introduced in YARA 4.2.
 type ScanCallbackConsoleLog interface {
 	ConsoleLog(*ScanContext, string)
 }
