@@ -243,12 +243,13 @@ func TestRule(t *testing.T) {
 }
 
 type testCallback struct {
-	t          *testing.T
-	finished   bool
-	modules    map[string]struct{}
-	matched    map[string]struct{}
-	notMatched map[string]struct{}
-	logged     []string
+	t              *testing.T
+	finished       bool
+	modules        map[string]struct{}
+	matched        map[string]struct{}
+	notMatched     map[string]struct{}
+	logged         []string
+	tooManyMatches []string
 }
 
 func newTestCallback(t *testing.T) *testCallback {
@@ -257,6 +258,7 @@ func newTestCallback(t *testing.T) *testCallback {
 		make(map[string]struct{}),
 		make(map[string]struct{}),
 		make(map[string]struct{}),
+		nil,
 		nil,
 	}
 }
@@ -290,6 +292,10 @@ func (c *testCallback) ModuleImported(*ScanContext, *Object) (bool, error) {
 }
 func (c *testCallback) ConsoleLog(_ *ScanContext, s string) {
 	c.logged = append(c.logged, s)
+}
+func (c *testCallback) TooManyMatches(_ *ScanContext, r *Rule, s string) (bool, error) {
+	c.tooManyMatches = append(c.logged, fmt.Sprintf("%s:%s", r.Identifier(), s))
+	return false, nil
 }
 
 func TestImportDataCallback(t *testing.T) {
@@ -336,5 +342,19 @@ func TestConsoleCallback(t *testing.T) {
 	}
 	if len(cb.logged) < 1 || cb.logged[0] != "hello world" {
 		t.Errorf("console log does not containi expected hello world string: %v", cb.logged)
+	}
+}
+
+func TestTooManyMatches(t *testing.T) {
+	cb := newTestCallback(t)
+	r := makeRules(t, `
+		rule t { strings: $s1 = "\x00" condition: #s1 == 10000000 }
+        `)
+
+	if err := r.ScanMem(make([]byte, 10000000), 0, 0, cb); err != nil {
+		t.Error(err)
+	}
+	if len(cb.tooManyMatches) != 1 || cb.tooManyMatches[0] != "t:$s1" {
+		t.Errorf("too many matches does not contain regularly matching string: %v", cb.tooManyMatches)
 	}
 }
