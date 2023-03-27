@@ -91,5 +91,5 @@ var errorStrings = map[int]string{
 	C.ERROR_BLOCK_NOT_READY:                "block not ready",
 	C.ERROR_INVALID_PERCENTAGE:             "invalid percentage",
 	C.ERROR_IDENTIFIER_MATCHES_WILDCARD:    "identifier matches wildcard",
-	C.ERROR_ERROR_INVALID_VALUE:            "invalid value",
+	C.ERROR_INVALID_VALUE:                  "invalid value",
 }
