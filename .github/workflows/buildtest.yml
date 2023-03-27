@@ -28,7 +28,7 @@ jobs:
 
     - name: Build YARA from source
       run: |
-        YARA_VERSION=4.2.1
+        YARA_VERSION=4.3.0
         wget --no-verbose -O- https://github.com/VirusTotal/yara/archive/v${YARA_VERSION}.tar.gz | tar -C .. -xzf -
         ( cd ../yara-${YARA_VERSION} && ./bootstrap.sh )
         mkdir -p ../yara-build
