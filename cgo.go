@@ -11,8 +11,8 @@ package yara
 // #cgo yara_no_pkg_config                LDFLAGS:    -lyara -lm
 /*
 #include <yara.h>
-#if YR_VERSION_HEX < 0x040200
-#error YARA version 4.2 required
+#if YR_VERSION_HEX < 0x040300
+#error YARA version 4.3 required
 #endif
 */
 import "C"
