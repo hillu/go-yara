@@ -11,7 +11,7 @@ package yara
 #include <yara.h>
 
 // rules_table is part of a union and as such not reachable from go code.
-static YR_RULE* find_rule(YR_RULES* r, uint rule_idx) {
+static YR_RULE* find_rule(YR_RULES* r, unsigned int rule_idx) {
 	return &r->rules_table[rule_idx];
 }
 */
