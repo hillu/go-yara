@@ -37,6 +37,11 @@ type MemoryBlockIteratorWithFilesize interface {
 	Filesize() uint64
 }
 
+type MemoryBlockIteratorWithLastError interface {
+	MemoryBlockIterator
+	LastError() Error
+}
+
 type memoryBlockIteratorContainer struct {
 	MemoryBlockIterator
 	// MemoryBlock holds return values of the First and Next methods
@@ -147,6 +152,9 @@ func memoryBlockIteratorCommon(cmbi *C.YR_MEMORY_BLOCK_ITERATOR, c *memoryBlockI
 func memoryBlockIteratorFirst(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOCK {
 	c := ((*cgoHandle)(cmbi.context)).Value().(*memoryBlockIteratorContainer)
 	c.MemoryBlock = c.MemoryBlockIterator.First()
+	if mbile, ok := c.MemoryBlockIterator.(MemoryBlockIteratorWithLastError); ok {
+		cmbi.last_error = C.int(mbile.LastError())
+	}
 	return memoryBlockIteratorCommon(cmbi, c)
 }
 
@@ -157,6 +165,9 @@ func memoryBlockIteratorFirst(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLO
 func memoryBlockIteratorNext(cmbi *C.YR_MEMORY_BLOCK_ITERATOR) *C.YR_MEMORY_BLOCK {
 	c := ((*cgoHandle)(cmbi.context)).Value().(*memoryBlockIteratorContainer)
 	c.MemoryBlock = c.MemoryBlockIterator.Next()
+	if mbile, ok := c.MemoryBlockIterator.(MemoryBlockIteratorWithLastError); ok {
+		cmbi.last_error = C.int(mbile.LastError())
+	}
 	return memoryBlockIteratorCommon(cmbi, c)
 }
 
