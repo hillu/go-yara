@@ -122,7 +122,8 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	defer C.free(unsafe.Pointer(filename))
 	id := cgoNewHandle(c)
 	defer id.Delete()
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(&id))
+	cbp := unsafe.Pointer(&id)
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), cbp)
 	numErrors := int(C._yr_compiler_add_fd(c.cptr, C.int(file.Fd()), ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -131,6 +132,7 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 		err = errors.New(msg)
 	}
 	runtime.KeepAlive(c)
+	runtime.KeepAlive(cbp)
 	return
 }
 
@@ -152,7 +154,8 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 	defer C.free(unsafe.Pointer(crules))
 	id := cgoNewHandle(c)
 	defer id.Delete()
-	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), unsafe.Pointer(&id))
+	cbp := unsafe.Pointer(&id)
+	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), cbp)
 	numErrors := int(C.yr_compiler_add_string(c.cptr, crules, ns))
 	if numErrors > 0 {
 		var buf [1024]C.char
@@ -161,6 +164,7 @@ func (c *Compiler) AddString(rules string, namespace string) (err error) {
 		err = errors.New(msg)
 	}
 	runtime.KeepAlive(c)
+	runtime.KeepAlive(cbp)
 	return
 }
 
