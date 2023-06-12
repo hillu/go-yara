@@ -267,7 +267,9 @@ type RuleProfilingInfo struct {
 
 // GetProfilingInfo retrieves profiling information from the Scanner.
 func (s *Scanner) GetProfilingInfo() (rpis []RuleProfilingInfo) {
-	for rpi := C.yr_scanner_get_profiling_info(s.cptr); rpi.rule != nil; rpi = (*C.YR_RULE_PROFILING_INFO)(unsafe.Pointer(uintptr(unsafe.Pointer(rpi)) + unsafe.Sizeof(*rpi))) {
+	rpi := C.yr_scanner_get_profiling_info(s.cptr)
+	defer C.yr_free(unsafe.Pointer(rpi))
+	for ; rpi.rule != nil; rpi = (*C.YR_RULE_PROFILING_INFO)(unsafe.Pointer(uintptr(unsafe.Pointer(rpi)) + unsafe.Sizeof(*rpi))) {
 		rpis = append(rpis, RuleProfilingInfo{Rule{rpi.rule, s.rules}, uint64(rpi.cost)})
 	}
 	return
