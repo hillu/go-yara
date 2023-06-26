@@ -10,7 +10,20 @@ package yara
 
 /*
 #include <yara.h>
-#include <stdlib.h>
+
+#ifdef _WIN32
+#include <stdint.h>
+YR_API int _yr_compiler_add_fd(
+    YR_COMPILER* compiler,
+    int rules_fd,
+    const char* namespace_,
+    const char* file_name)
+{
+  return yr_compiler_add_fd(compiler, (YR_FILE_DESCRIPTOR)(intptr_t)rules_fd, namespace_, file_name);
+}
+#else
+#define _yr_compiler_add_fd yr_compiler_add_fd
+#endif
 
 void compilerCallback(int, char*, int, char*, void*);
 */
@@ -41,7 +54,7 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 	id := callbackData.Put(c)
 	defer callbackData.Delete(id)
 	C.yr_compiler_set_callback(c.cptr, C.YR_COMPILER_CALLBACK_FUNC(C.compilerCallback), id)
-	numErrors := int(C.yr_compiler_add_fd(c.cptr, (C.YR_FILE_DESCRIPTOR)(file.Fd()), ns, filename))
+	numErrors := int(C._yr_compiler_add_fd(c.cptr, (C.int)(file.Fd()), ns, filename))
 	if numErrors > 0 {
 		var buf [1024]C.char
 		msg := C.GoString(C.yr_compiler_get_error_message(
