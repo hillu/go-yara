@@ -217,7 +217,7 @@ func (s *Scanner) ScanProc(pid int) (err error) {
 // ScanMemBlocks scans over a MemoryBlockIterator using the scanner.
 //
 // If no callback object has been set for the scanner using
-// SetCAllback, it is initialized with an empty MatchRules object.
+// SetCallback, it is initialized with an empty MatchRules object.
 func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	c := makeMemoryBlockIteratorContainer(mbi)
 	defer c.free()
@@ -225,7 +225,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	defer C.free(cmbi.context)
 	defer ((*cgoHandle)(cmbi.context)).Delete()
 	s.putCallbackData()
-	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
+	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback)|C.SCAN_FLAGS_NO_TRYCATCH)
 	err = newError(C.yr_scanner_scan_mem_blocks(
 		s.cptr,
 		cmbi,
