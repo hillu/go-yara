@@ -10,6 +10,11 @@ package yara
 #include <yara.h>
 #include "compat.h"
 
+// rule_identifier is a union accessor function.
+static const char* rule_identifier(YR_RULE* r) {
+	return r->identifier;
+}
+
 void compilerCallback(int, char*, int, YR_RULE*, char*, void*);
 char* includeCallback(char*, char*, char*, void*);
 void freeCallback(char*, void*);
@@ -17,6 +22,7 @@ void freeCallback(char*, void*);
 import "C"
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"runtime"
@@ -26,10 +32,18 @@ import (
 //export compilerCallback
 func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, rule *C.YR_RULE, message *C.char, userData unsafe.Pointer) {
 	c := cgoHandle(*(*uintptr)(userData)).Value().(*Compiler)
+	var text string
+	if rule != nil {
+		text = fmt.Sprintf("rule \"%s\": %s",
+			C.GoString(C.rule_identifier(rule)),
+			C.GoString(message))
+	} else {
+		text = C.GoString(message)
+	}
 	msg := CompilerMessage{
 		Filename: C.GoString(filename),
 		Line:     int(linenumber),
-		Text:     C.GoString(message),
+		Text:     text,
 	}
 	if rule != nil {
 		// Rule object implicitly relies on the compiler object and is destroyed when the compiler is destroyed.

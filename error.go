@@ -8,24 +8,93 @@ package yara
 
 // #include <yara.h>
 import "C"
-import "strconv"
+import (
+	"fmt"
+)
 
 // Error encapsulates the C API error codes.
-type Error int
+type Error struct {
+	// YARA error code.
+	Code int
+	// Namespace in which the error occurred, if applicable. It can be empty.
+	Namespace string
+	// Rule in which the error occurred, if applicable. It can be empty.
+	RuleIdentifier string
+	// String in which the error occurred, if applicable. It can be empty.
+	StringIdentifier string
+}
 
-func (e Error) Error() string {
-	if str, ok := errorStrings[int(e)]; ok {
+func (e Error) Error() (errorString string) {
+	if e.Namespace != "" && e.RuleIdentifier != "" {
+		errorString = fmt.Sprintf("%s caused by rule \"%s:%s\"",
+			errorCodeToString(e.Code), e.Namespace, e.RuleIdentifier)
+		if e.StringIdentifier != "" {
+			errorString += fmt.Sprintf(" string %s", e.StringIdentifier)
+		}
+	} else {
+		errorString = errorCodeToString(e.Code)
+	}
+	return errorString
+}
+
+func errorCodeToString(errorCode int) string {
+	if str, ok := errorStrings[errorCode]; ok {
 		return str
 	}
-	return "unknown YARA error " + strconv.Itoa(int(e))
+	return fmt.Sprintf("unknown error %d", errorCode)
 }
 
 func newError(code C.int) error {
-	if code != 0 {
-		return Error(code)
+	if code == C.ERROR_SUCCESS {
+		return nil
 	}
-	return nil
+	return Error{Code: int(code)}
 }
+
+const (
+	ERROR_SUCCESS                      = C.ERROR_SUCCESS
+	ERROR_INSUFFICIENT_MEMORY          = C.ERROR_INSUFFICIENT_MEMORY
+	ERROR_COULD_NOT_ATTACH_TO_PROCESS  = C.ERROR_COULD_NOT_ATTACH_TO_PROCESS
+	ERROR_COULD_NOT_OPEN_FILE          = C.ERROR_COULD_NOT_OPEN_FILE
+	ERROR_COULD_NOT_MAP_FILE           = C.ERROR_COULD_NOT_MAP_FILE
+	ERROR_INVALID_FILE                 = C.ERROR_INVALID_FILE
+	ERROR_CORRUPT_FILE                 = C.ERROR_CORRUPT_FILE
+	ERROR_UNSUPPORTED_FILE_VERSION     = C.ERROR_UNSUPPORTED_FILE_VERSION
+	ERROR_INVALID_REGULAR_EXPRESSION   = C.ERROR_INVALID_REGULAR_EXPRESSION
+	ERROR_INVALID_HEX_STRING           = C.ERROR_INVALID_HEX_STRING
+	ERROR_SYNTAX_ERROR                 = C.ERROR_SYNTAX_ERROR
+	ERROR_LOOP_NESTING_LIMIT_EXCEEDED  = C.ERROR_LOOP_NESTING_LIMIT_EXCEEDED
+	ERROR_DUPLICATED_LOOP_IDENTIFIER   = C.ERROR_DUPLICATED_LOOP_IDENTIFIER
+	ERROR_DUPLICATED_IDENTIFIER        = C.ERROR_DUPLICATED_IDENTIFIER
+	ERROR_DUPLICATED_TAG_IDENTIFIER    = C.ERROR_DUPLICATED_TAG_IDENTIFIER
+	ERROR_DUPLICATED_META_IDENTIFIER   = C.ERROR_DUPLICATED_META_IDENTIFIER
+	ERROR_DUPLICATED_STRING_IDENTIFIER = C.ERROR_DUPLICATED_STRING_IDENTIFIER
+	ERROR_UNREFERENCED_STRING          = C.ERROR_UNREFERENCED_STRING
+	ERROR_UNDEFINED_STRING             = C.ERROR_UNDEFINED_STRING
+	ERROR_UNDEFINED_IDENTIFIER         = C.ERROR_UNDEFINED_IDENTIFIER
+	ERROR_MISPLACED_ANONYMOUS_STRING   = C.ERROR_MISPLACED_ANONYMOUS_STRING
+	ERROR_INCLUDES_CIRCULAR_REFERENCE  = C.ERROR_INCLUDES_CIRCULAR_REFERENCE
+	ERROR_INCLUDE_DEPTH_EXCEEDED       = C.ERROR_INCLUDE_DEPTH_EXCEEDED
+	ERROR_WRONG_TYPE                   = C.ERROR_WRONG_TYPE
+	ERROR_EXEC_STACK_OVERFLOW          = C.ERROR_EXEC_STACK_OVERFLOW
+	ERROR_SCAN_TIMEOUT                 = C.ERROR_SCAN_TIMEOUT
+	ERROR_TOO_MANY_SCAN_THREADS        = C.ERROR_TOO_MANY_SCAN_THREADS
+	ERROR_CALLBACK_ERROR               = C.ERROR_CALLBACK_ERROR
+	ERROR_INVALID_ARGUMENT             = C.ERROR_INVALID_ARGUMENT
+	ERROR_TOO_MANY_MATCHES             = C.ERROR_TOO_MANY_MATCHES
+	ERROR_INTERNAL_FATAL_ERROR         = C.ERROR_INTERNAL_FATAL_ERROR
+	ERROR_NESTED_FOR_OF_LOOP           = C.ERROR_NESTED_FOR_OF_LOOP
+	ERROR_INVALID_FIELD_NAME           = C.ERROR_INVALID_FIELD_NAME
+	ERROR_UNKNOWN_MODULE               = C.ERROR_UNKNOWN_MODULE
+	ERROR_NOT_A_STRUCTURE              = C.ERROR_NOT_A_STRUCTURE
+	ERROR_NOT_INDEXABLE                = C.ERROR_NOT_INDEXABLE
+	ERROR_NOT_A_FUNCTION               = C.ERROR_NOT_A_FUNCTION
+	ERROR_INVALID_FORMAT               = C.ERROR_INVALID_FORMAT
+	ERROR_TOO_MANY_ARGUMENTS           = C.ERROR_TOO_MANY_ARGUMENTS
+	ERROR_WRONG_ARGUMENTS              = C.ERROR_WRONG_ARGUMENTS
+	ERROR_WRONG_RETURN_TYPE            = C.ERROR_WRONG_RETURN_TYPE
+	ERROR_DUPLICATED_STRUCTURE_MEMBER  = C.ERROR_DUPLICATED_STRUCTURE_MEMBER
+)
 
 // FIXME: This should be generated from yara/error.h
 var errorStrings = map[int]string{
