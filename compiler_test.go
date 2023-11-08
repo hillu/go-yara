@@ -6,7 +6,9 @@
 
 package yara
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCompiler(t *testing.T) {
 	c, _ := NewCompiler()
@@ -41,6 +43,18 @@ func TestWarnings(t *testing.T) {
 		t.Error()
 	}
 	t.Logf("Recorded Errors=%#v, Warnings=%#v", c.Errors, c.Warnings)
+}
+
+func TestErrors(t *testing.T) {
+	c, _ := NewCompiler()
+	c.AddString("rule foo { bar }", "")
+	if len(c.Errors) == 0 {
+		t.Error("did not recognize error")
+	}
+	expectedError := "rule \"foo\": syntax error, unexpected identifier, expecting <condition>"
+	if c.Errors[0].Text != expectedError {
+		t.Errorf("expected error: %#v, got %#v", expectedError, c.Errors[0].Text)
+	}
 }
 
 func setupCompiler(t *testing.T) *Compiler {

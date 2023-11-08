@@ -41,6 +41,23 @@ type Scanner struct {
 	userData *cgoHandle
 }
 
+// Creates a new error that includes information a about the rule
+// causing the error.
+func (s *Scanner) newScanError(code C.int) error {
+	if code == C.ERROR_SUCCESS {
+		return nil
+	}
+	err := Error{Code: int(code)}
+	if rule := s.GetLastErrorRule(); rule != nil {
+		err.RuleIdentifier = rule.Identifier()
+		err.Namespace = rule.Namespace()
+	}
+	if str := s.GetLastErrorString(); str != nil {
+		err.StringIdentifier = str.Identifier()
+	}
+	return err
+}
+
 // NewScanner creates a YARA scanner.
 func NewScanner(r *Rules) (*Scanner, error) {
 	var yrScanner *C.YR_SCANNER
@@ -153,7 +170,7 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 	}
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
-	err = newError(C.yr_scanner_scan_mem(
+	err = s.newScanError(C.yr_scanner_scan_mem(
 		s.cptr,
 		ptr,
 		C.size_t(len(buf))))
@@ -176,7 +193,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 	defer C.free(unsafe.Pointer(cfilename))
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
-	err = newError(C.yr_scanner_scan_file(
+	err = s.newScanError(C.yr_scanner_scan_file(
 		s.cptr,
 		cfilename,
 	))
@@ -191,7 +208,7 @@ func (s *Scanner) ScanFile(filename string) (err error) {
 func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
-	err = newError(C._yr_scanner_scan_fd(
+	err = s.newScanError(C._yr_scanner_scan_fd(
 		s.cptr,
 		C.int(fd),
 	))
@@ -206,7 +223,7 @@ func (s *Scanner) ScanFileDescriptor(fd uintptr) (err error) {
 func (s *Scanner) ScanProc(pid int) (err error) {
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
-	err = newError(C.yr_scanner_scan_proc(
+	err = s.newScanError(C.yr_scanner_scan_proc(
 		s.cptr,
 		C.int(pid),
 	))
@@ -226,7 +243,7 @@ func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator) (err error) {
 	defer ((*cgoHandle)(cmbi.context)).Delete()
 	s.putCallbackData()
 	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback)|C.SCAN_FLAGS_NO_TRYCATCH)
-	err = newError(C.yr_scanner_scan_mem_blocks(
+	err = s.newScanError(C.yr_scanner_scan_mem_blocks(
 		s.cptr,
 		cmbi,
 	))
