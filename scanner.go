@@ -169,7 +169,15 @@ func (s *Scanner) ScanMem(buf []byte) (err error) {
 		ptr = (*C.uint8_t)(unsafe.Pointer(&(buf[0])))
 	}
 	s.putCallbackData()
-	C.yr_scanner_set_flags(s.cptr, s.flags.withReportFlags(s.Callback))
+	// SCAN_FLAGS_NO_TRYCATCH disables the YARA's exception handler that
+	// captures segfaults. Capturing these exceptions only makes sense
+	// while scanning memory-mapped files. When scanning in-memory data
+	// the excepton-handling mechanism doesn't have any benefit and only
+	// causes trouble, as it can interfere with golang's ability to detect
+	// null-pointer dereferences and panic accordingly.
+	C.yr_scanner_set_flags(
+		s.cptr,
+		s.flags.withReportFlags(s.Callback)|C.SCAN_FLAGS_NO_TRYCATCH)
 	err = s.newScanError(C.yr_scanner_scan_mem(
 		s.cptr,
 		ptr,
