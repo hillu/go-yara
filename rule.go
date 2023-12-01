@@ -249,6 +249,11 @@ func (m *Match) Offset() int64 {
 	return int64(m.cptr.offset)
 }
 
+// XorKey returns the XOR value with which the string match occurred.
+func (m *Match) XorKey() uint8 {
+	return uint8(m.cptr.xor_key)
+}
+
 // Data returns the blob of data associated with the string match.
 func (m *Match) Data() []byte {
 	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
