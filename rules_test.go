@@ -358,3 +358,23 @@ func TestTooManyMatches(t *testing.T) {
 		t.Errorf("too many matches does not contain regularly matching string: %v", cb.tooManyMatches)
 	}
 }
+
+func TestXorKey(t *testing.T) {
+	var m MatchRules
+	r := makeRules(t, `
+		rule t { strings: $s1 = "\x00\x01\x02\x03" xor condition: all of them }
+        `)
+
+	if err := r.ScanMem([]byte{0x10, 0x11, 0x12, 0x13}, 0, 0, &m); err != nil {
+		t.Error(err)
+	}
+	if len(m) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(m))
+	}
+	if len(m[0].Strings) != 1 {
+		t.Fatalf("expected 1 string, got %d", len(m[0].Strings))
+	}
+	if m[0].Strings[0].XorKey != 0x10 {
+		t.Fatalf("expected xor key 0x10, got 0x%x", m[0].Strings[0].XorKey)
+	}
+}
