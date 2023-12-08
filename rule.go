@@ -107,7 +107,10 @@ static void get_rules(YR_RULES *ruleset, const YR_RULE *rules[], int *n) {
 
 */
 import "C"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 // Rule represents a single rule as part of a ruleset.
 type Rule struct {
@@ -118,12 +121,16 @@ type Rule struct {
 
 // Identifier returns the rule's name.
 func (r *Rule) Identifier() string {
-	return C.GoString(C.rule_identifier(r.cptr))
+	id := C.GoString(C.rule_identifier(r.cptr))
+	runtime.KeepAlive(r)
+	return id
 }
 
 // Namespace returns the rule's namespace.
 func (r *Rule) Namespace() string {
-	return C.GoString(C.rule_namespace(r.cptr))
+	namespace := C.GoString(C.rule_namespace(r.cptr))
+	runtime.KeepAlive(r)
+	return namespace
 }
 
 // Tags returns the rule's tags.
@@ -138,6 +145,7 @@ func (r *Rule) Tags() (tags []string) {
 	for _, t := range tagptrs {
 		tags = append(tags, C.GoString(t))
 	}
+	runtime.KeepAlive(r)
 	return
 }
 
@@ -173,17 +181,22 @@ func (r *Rule) Metas() (metas []Meta) {
 		}
 		metas = append(metas, Meta{id, val})
 	}
+	runtime.KeepAlive(r)
 	return
 }
 
 // IsPrivate returns true if the rule is marked as private.
 func (r *Rule) IsPrivate() bool {
-	return r.cptr.flags&C.RULE_FLAGS_PRIVATE != 0
+	private := r.cptr.flags&C.RULE_FLAGS_PRIVATE != 0
+	runtime.KeepAlive(r)
+	return private
 }
 
 // IsGlobal returns true if the rule is marked as global.
 func (r *Rule) IsGlobal() bool {
-	return r.cptr.flags&C.RULE_FLAGS_GLOBAL != 0
+	global := r.cptr.flags&C.RULE_FLAGS_GLOBAL != 0
+	runtime.KeepAlive(r)
+	return global
 }
 
 // String represents a string as part of a rule.
@@ -210,7 +223,9 @@ func (r *Rule) Strings() (strs []String) {
 
 // Identifier returns the string's name.
 func (s *String) Identifier() string {
-	return C.GoString(C.string_identifier(s.cptr))
+	id := C.GoString(C.string_identifier(s.cptr))
+	runtime.KeepAlive(s)
+	return id
 }
 
 // Match represents a string match.
@@ -241,12 +256,16 @@ func (s *String) Matches(sc *ScanContext) (matches []Match) {
 // Base returns the base offset of the memory block in which the
 // string match occurred.
 func (m *Match) Base() int64 {
-	return int64(m.cptr.base)
+	base := int64(m.cptr.base)
+	runtime.KeepAlive(m)
+	return base
 }
 
 // Offset returns the offset at which the string match occurred.
 func (m *Match) Offset() int64 {
-	return int64(m.cptr.offset)
+	offset := int64(m.cptr.offset)
+	runtime.KeepAlive(m)
+	return offset
 }
 
 // XorKey returns the XOR value with which the string match occurred.
@@ -256,7 +275,9 @@ func (m *Match) XorKey() uint8 {
 
 // Data returns the blob of data associated with the string match.
 func (m *Match) Data() []byte {
-	return C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
+	data := C.GoBytes(unsafe.Pointer(m.cptr.data), C.int(m.cptr.data_length))
+	runtime.KeepAlive(m)
+	return data
 }
 
 func (r *Rule) getMatchStrings(sc *ScanContext) (matchstrings []MatchString) {
@@ -277,11 +298,13 @@ func (r *Rule) getMatchStrings(sc *ScanContext) (matchstrings []MatchString) {
 // Enable enables a single rule.
 func (r *Rule) Enable() {
 	C.yr_rule_enable(r.cptr)
+	runtime.KeepAlive(r)
 }
 
 // Disable disables a single rule.
 func (r *Rule) Disable() {
 	C.yr_rule_disable(r.cptr)
+	runtime.KeepAlive(r)
 }
 
 // GetRules returns a slice of rule objects that are part of the
