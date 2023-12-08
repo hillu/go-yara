@@ -46,6 +46,7 @@ type MatchString struct {
 	Base   uint64
 	Offset uint64
 	Data   []byte
+	XorKey uint8
 }
 
 // ScanFlags are used to tweak the behavior of Scan* functions.

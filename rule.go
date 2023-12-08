@@ -267,6 +267,7 @@ func (r *Rule) getMatchStrings(sc *ScanContext) (matchstrings []MatchString) {
 				Base:   uint64(m.Base()),
 				Offset: uint64(m.Offset()),
 				Data:   m.Data(),
+				XorKey: m.XorKey(),
 			})
 		}
 	}
