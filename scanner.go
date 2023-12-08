@@ -297,10 +297,12 @@ func (s *Scanner) GetProfilingInfo() (rpis []RuleProfilingInfo) {
 	for ; rpi.rule != nil; rpi = (*C.YR_RULE_PROFILING_INFO)(unsafe.Pointer(uintptr(unsafe.Pointer(rpi)) + unsafe.Sizeof(*rpi))) {
 		rpis = append(rpis, RuleProfilingInfo{Rule{rpi.rule, s.rules}, uint64(rpi.cost)})
 	}
+	runtime.KeepAlive(s)
 	return
 }
 
 // ResetProfilingInfo resets the Scanner's profiling information
 func (s *Scanner) ResetProfilingInfo() {
 	C.yr_scanner_reset_profiling_info(s.cptr)
+	runtime.KeepAlive(s)
 }
