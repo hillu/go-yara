@@ -15,6 +15,11 @@ static const char* rule_identifier(YR_RULE* r) {
 	return r->identifier;
 }
 
+// rule_namespace is a union accessor function.
+static const char* rule_namespace(YR_RULE* r) {
+	return r->ns->name;
+}
+
 void compilerCallback(int, char*, int, YR_RULE*, char*, void*);
 char* includeCallback(char*, char*, char*, void*);
 void freeCallback(char*, void*);
@@ -46,7 +51,7 @@ func compilerCallback(errorLevel C.int, filename *C.char, linenumber C.int, rule
 		Text:     text,
 	}
 	if rule != nil {
-		msg.Rule = C.GoString(rule_namespace(rule))
+		msg.Rule = C.GoString(C.rule_namespace(rule))
 		if msg.Rule == "default" {
 			msg.Rule = C.GoString(C.rule_identifier(rule))
 		} else {
