@@ -23,8 +23,8 @@ variables need to be set when running `go build` or `go install`:
 For the examples below, YARA is built out-of-tree, i.e. the build
 artifacts are placed into a separate directory referred to by the
 `YARA_BUILD_*` shell variables. `YARA_SRC` refers to the YARA source
-directory. The `PREFIX_*` refer to target directory for the `make
-install` step.
+directory. The `PREFIX_*` shell variables refer to target directory
+for the `make install` step.
 
 Since the MinGW environments provided by [MSYS2](https://msys2.org/)
 are technically cross-building environments, similar steps have to be
