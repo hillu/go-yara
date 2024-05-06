@@ -126,14 +126,28 @@ func (c *Compiler) setCallbackData(cb CompilerIncludeFunc) {
 	}
 }
 
+var (
+	errParse = errors.New("Compiler cannot be used after parse error")
+	errRules = errors.New("Compiler cannot be used after producing rule set")
+)
+
+func (c *Compiler) checkUsage() (err error) {
+	if c.cptr.errors != 0 {
+		err = errParse
+	} else if c.cptr.rules != nil {
+		err = errRules
+	}
+	return
+}
+
 // AddFile compiles rules from a file. Rules are added to the
 // specified namespace.
 //
 // If this function returns an error, the Compiler object will become
 // unusable.
 func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
-	if c.cptr.errors != 0 {
-		return errors.New("Compiler cannot be used after parse error")
+	if err := c.checkUsage(); err != nil {
+		return err
 	}
 	var ns *C.char
 	if namespace != "" {
@@ -164,8 +178,8 @@ func (c *Compiler) AddFile(file *os.File, namespace string) (err error) {
 // If this function returns an error, the Compiler object will become
 // unusable.
 func (c *Compiler) AddString(rules string, namespace string) (err error) {
-	if c.cptr.errors != 0 {
-		return errors.New("Compiler cannot be used after parse error")
+	if err := c.checkUsage(); err != nil {
+		return err
 	}
 	var ns *C.char
 	if namespace != "" {
@@ -224,8 +238,8 @@ func (c *Compiler) DefineVariable(identifier string, value interface{}) (err err
 
 // GetRules returns the compiled ruleset.
 func (c *Compiler) GetRules() (*Rules, error) {
-	if c.cptr.errors != 0 {
-		return nil, errors.New("Compiler cannot be used after parse error")
+	if err := c.checkUsage(); err != nil {
+		return nil, err
 	}
 	var yrRules *C.YR_RULES
 	if err := newError(C.yr_compiler_get_rules(c.cptr, &yrRules)); err != nil {
