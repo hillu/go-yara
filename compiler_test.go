@@ -57,6 +57,19 @@ func TestErrors(t *testing.T) {
 	}
 }
 
+func TestErrorNoPanic(t *testing.T) {
+	c, _ := NewCompiler()
+	c.AddString("rule test { condition: true }", "")
+	if _, err := c.GetRules(); err != nil {
+		t.Errorf("did not expect error: %v", err)
+	}
+	if err := c.AddString("rule test { }", ""); err == nil {
+		t.Error("expected AddString after GetRules to fail")
+	} else {
+		t.Logf("got error as expected: %v", err)
+	}
+}
+
 func setupCompiler(t *testing.T) *Compiler {
 	c, err := NewCompiler()
 	if err != nil {
