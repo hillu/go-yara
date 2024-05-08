@@ -81,6 +81,10 @@ type ScanCallbackTooManyMatches interface {
 	TooManyMatches(*ScanContext, *Rule, string) (bool, error)
 }
 
+type ScanCallbackTooSlowScanning interface {
+	TooSlowScanning(*ScanContext, *Rule, string) (bool, error)
+}
+
 // scanCallbackContainer is used by to pass a ScanCallback (and
 // associated data) between ScanXxx methods and scanCallbackFunc(). It
 // stores the public callback interface and a list of malloc()'d C
@@ -166,6 +170,15 @@ func scanCallbackFunc(ctx *C.YR_SCAN_CONTEXT, message C.int, messageData, userDa
 				owner: cbc.rules,
 			}
 			abort, err = c.TooManyMatches(s, rule, yrString.Identifier())
+		}
+	case C.CALLBACK_MSG_TOO_SLOW_SCANNING:
+		if c, ok := cbc.ScanCallback.(ScanCallbackTooSlowScanning); ok {
+			yrString := String{(*C.YR_STRING)(messageData), cbc.rules}
+			rule := &Rule{
+				cptr:  C.find_rule(cbc.rules.cptr, yrString.cptr.rule_idx),
+				owner: cbc.rules,
+			}
+			abort, err = c.TooSlowScanning(s, rule, yrString.Identifier())
 		}
 	}
 

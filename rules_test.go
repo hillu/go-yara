@@ -243,13 +243,14 @@ func TestRule(t *testing.T) {
 }
 
 type testCallback struct {
-	t              *testing.T
-	finished       bool
-	modules        map[string]struct{}
-	matched        map[string]struct{}
-	notMatched     map[string]struct{}
-	logged         []string
-	tooManyMatches []string
+	t               *testing.T
+	finished        bool
+	modules         map[string]struct{}
+	matched         map[string]struct{}
+	notMatched      map[string]struct{}
+	logged          []string
+	tooManyMatches  []string
+	tooSlowScanning []string
 }
 
 func newTestCallback(t *testing.T) *testCallback {
@@ -258,6 +259,7 @@ func newTestCallback(t *testing.T) *testCallback {
 		make(map[string]struct{}),
 		make(map[string]struct{}),
 		make(map[string]struct{}),
+		nil,
 		nil,
 		nil,
 	}
@@ -294,7 +296,11 @@ func (c *testCallback) ConsoleLog(_ *ScanContext, s string) {
 	c.logged = append(c.logged, s)
 }
 func (c *testCallback) TooManyMatches(_ *ScanContext, r *Rule, s string) (bool, error) {
-	c.tooManyMatches = append(c.logged, fmt.Sprintf("%s:%s", r.Identifier(), s))
+	c.tooManyMatches = append(c.tooManyMatches, fmt.Sprintf("%s:%s", r.Identifier(), s))
+	return false, nil
+}
+func (c *testCallback) TooSlowScanning(_ *ScanContext, r *Rule, s string) (bool, error) {
+	c.tooSlowScanning = append(c.tooSlowScanning, fmt.Sprintf("%s:%s", r.Identifier(), s))
 	return false, nil
 }
 
@@ -376,5 +382,19 @@ func TestXorKey(t *testing.T) {
 	}
 	if m[0].Strings[0].XorKey != 0x10 {
 		t.Fatalf("expected xor key 0x10, got 0x%x", m[0].Strings[0].XorKey)
+	}
+}
+
+func TestTooSlowScanning(t *testing.T) {
+	cb := newTestCallback(t)
+	r := makeRules(t, `
+		rule t { strings: $s1 = /[^\x00]/ condition: any of them }
+        `)
+
+	if err := r.ScanMem(make([]byte, 8000000), 0, 0, cb); err != nil {
+		t.Error(err)
+	}
+	if len(cb.tooSlowScanning) != 1 || cb.tooSlowScanning[0] != "t:$s1" {
+		t.Errorf("too slow scanning does not contain bad regex: %v", cb.tooManyMatches)
 	}
 }
